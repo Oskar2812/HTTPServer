@@ -13,13 +13,18 @@ int main() {
 
     int result = ReadIncomingData(file, buffer, 1000);
     if (result > 0) {
-        char errorMessage[MAX_ERROR_MESSAGE_LENGTH];
-        GetErrorMessage(result, errorMessage);
-        printf("%s", errorMessage);
+        PrintErrorMessage(result);
         return 1;
     }
 
     printf("%s", buffer);
+
+    HTTPRequest request = {0};
+    result = ParseHTTPHeaders(buffer, &request);
+    if (result > 0) {
+        PrintErrorMessage(result);
+        return 1;
+    }
 
     return 0;
 }

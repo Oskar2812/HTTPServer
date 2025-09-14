@@ -6,7 +6,8 @@ SRC = src
 TARGET  = example
 DBIN    = $(BIN)/debug
 DTARGET = example_debug
-OBJ = $(BIN)/ResultCodes.o $(BIN)/Server.o
+OBJ = $(BIN)/ResultCodes.o $(BIN)/Server.o $(BIN)/HTTPRequest.o
+DOBJ = $(DBIN)/ResultCodes.o $(DBIN)/Server.o $(DBIN)/HTTPRequest.o
 
 all: $(TARGET)
 
@@ -24,7 +25,7 @@ $(BIN)/%.o: $(SRC)/%.c | $(BIN)
 # ------------------------
 debug: $(DTARGET)
 
-$(DTARGET): $(DBIN)/main.o
+$(DTARGET): $(DBIN)/main.o $(DOBJ)
 	$(CC) $(CFLAGS) -g -O0 -o $@ $^
 
 $(DBIN)/%.o: $(SRC)/%.c | $(DBIN)

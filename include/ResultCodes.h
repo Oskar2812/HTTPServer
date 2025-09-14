@@ -5,9 +5,13 @@
 
 typedef enum {
     Success = 0,
-    InsufficientMemory
+    Error,
+    InsufficientMemory,
+    InvalidHttpMethod,
+    InvalidHttpVersion
 } ResultCode;
 
 void GetErrorMessage(ResultCode resultCode, char* buffer);
+void PrintErrorMessage(ResultCode resultCode);
 
 #endif

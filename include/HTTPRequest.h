@@ -1,6 +1,8 @@
 #ifndef HTTPREQUEST_H
 #define HTTPREQUEST_H
 
+#include "../include/ResultCodes.h"
+
 #define MAX_PATH_LENGTH 128
 #define MAX_HEADER_NAME_LENGTH 32
 #define MAX_HEADER_VALUE_LENGTH 256
@@ -35,5 +37,7 @@ typedef struct {
     HTTPHeader Header;
     char Body[MAX_BODY_LENGTH];
 } HTTPRequest;
+
+ResultCode ParseHTTPHeaders(char* buffer, HTTPRequest* request);
 
 #endif 
