@@ -20,6 +20,9 @@ void GetErrorMessage(ResultCode resultCode, char* buffer) {
         case InvalidHttpVersion:
             strcpy(buffer, "Http version is not recognised");
             break;
+        case InvalidRequestLine:
+            strcpy(buffer, "Request line is malformed");
+            break;
         default:
             strcpy(buffer, "Result code not recognised");
             break;

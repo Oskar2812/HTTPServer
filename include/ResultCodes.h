@@ -8,7 +8,8 @@ typedef enum {
     Error,
     InsufficientMemory,
     InvalidHttpMethod,
-    InvalidHttpVersion
+    InvalidHttpVersion,
+    InvalidRequestLine,
 } ResultCode;
 
 void GetErrorMessage(ResultCode resultCode, char* buffer);

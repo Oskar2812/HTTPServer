@@ -7,6 +7,7 @@
 #define MAX_HEADER_NAME_LENGTH 32
 #define MAX_HEADER_VALUE_LENGTH 256
 #define MAX_BODY_LENGTH 1024
+#define MAX_HEADERS 16
 
 typedef enum {
     GET,
@@ -34,7 +35,7 @@ typedef struct {
 
 typedef struct {
     HTTPRequestLine RequestLine;
-    HTTPHeader Header;
+    HTTPHeader Header[MAX_HEADERS];
     char Body[MAX_BODY_LENGTH];
 } HTTPRequest;
 
