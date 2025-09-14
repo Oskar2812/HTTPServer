@@ -5,6 +5,6 @@
 
 #include "ResultCodes.h"
 
-ResultCode ReadIncomingData(FILE* file, char* buffer, int bufferSize);
+ResultCode ReadIncomingData(FILE* file, char* buffer, int count);
 
 #endif

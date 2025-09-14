@@ -23,6 +23,12 @@ void GetErrorMessage(ResultCode resultCode, char* buffer) {
         case InvalidRequestLine:
             strcpy(buffer, "Request line is malformed");
             break;
+        case HeadersTooLong:
+            strcpy(buffer, "Http headers section is too long");
+            break;
+        case ItemNotFound:
+            strcpy(buffer, "Could not find matching value");
+            break;
         default:
             strcpy(buffer, "Result code not recognised");
             break;

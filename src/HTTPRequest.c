@@ -1,19 +1,14 @@
 #include <string.h>
+#include <stdlib.h>
 
 #include "../include/HTTPRequest.h"
-
-void PrepareCompareString(char* compareString, char* methodString, int* offset, int n) {
-    strncpy(compareString, methodString, n);
-    compareString[n] = '\0';
-    *offset = n + 1;
-}
 
 ResultCode ParseHTTPPath(char* buffer, HTTPRequest* request, int* offset) {
     int position = 0;
     while (1) {
         char next;
         next = buffer[position];
-        if (next == '\n' || next == ' ') {
+        if (next == ' ') {
             *offset = position + 1;
             return Success;
         }
@@ -90,7 +85,8 @@ ResultCode ParseHTTPHeader(char* buffer, HTTPRequest* request, int nHeader, int*
     
     while(1) {
         char next = buffer[position];
-        if (next == '\n') {
+        if (strncmp(buffer + position, "\r\n", 2) == 0) {
+            position += 2;
             break;
         }
         request->Header[nHeader].Value[position - headerNameSize] = next;
@@ -104,34 +100,38 @@ ResultCode ParseHTTPHeader(char* buffer, HTTPRequest* request, int nHeader, int*
     return Success;
 }
 
-ResultCode ParseHTTPHeaders(char* buffer, HTTPRequest* request) {
+ResultCode ParseHTTPHeaders(char* buffer, int bufferSize, HTTPRequest* request, int* headerSize) {
     int offset = 0;
+    int position = 0;
     int result = ParseHTTPMethod(buffer, request, &offset);
     if (result > 0) {
         return result;
     }
     buffer += offset;
+    position += offset;
 
     result = ParseHTTPPath(buffer, request, &offset);
     if (result > 0) {
         return result;
     }
     buffer += offset;
+    position += offset;
 
     result = ParseHTTPVersion(buffer, request, &offset);
     if (result > 0) {
         return result;
     }
     buffer += offset;
-    if (buffer[0] != '\n') {
+    if (strncmp(buffer, "\r\n", 2) != 0) {
         return InvalidRequestLine;
     }
-    buffer += 1;
+    buffer += 2;
+    position += offset;
 
     int nHeaders = 0;
     while (1) {
         char next = buffer[0];
-        if (next == '\n' || next == 0) {
+        if (strncmp(buffer, "\r\n", 2) == 0 || next == 0) {
             break;
         }
         result = ParseHTTPHeader(buffer, request, nHeaders, &offset);
@@ -139,8 +139,48 @@ ResultCode ParseHTTPHeaders(char* buffer, HTTPRequest* request) {
             return result;
         }
         nHeaders += 1;
-        buffer += offset + 1;
+        buffer += offset;
+        position += offset;
+        if (position >= bufferSize) {
+            return HeadersTooLong;
+        }
     }
+    request->NHeaders = nHeaders;
+    *headerSize = position;
+    return Success;
+}
 
+ResultCode GetBodySize(HTTPRequest* request) {
+    switch (request->RequestLine.Method) {
+        case POST:
+        case PUT:
+            char bodySize[MAX_HEADER_VALUE_LENGTH];
+            int result = GetHeaderValue(request, "Content-Length", bodySize);
+            if (result > 0) {
+                return result;
+            }
+
+            int size = atoi(bodySize);
+            request->BodySize = size;
+            break;
+        default:
+            request->BodySize = 0;
+            break;
+    }
+    return Success;
+}
+
+ResultCode GetHeaderValue(HTTPRequest* request, char* headerName, char* headerValue) {
+    for (int ii = 0; ii < request->NHeaders; ii++) {
+        if (strcmp(request->Header[ii].Name + '\0', headerName) == 0) {
+            strncpy(headerValue, request->Header[ii].Value, MAX_HEADER_VALUE_LENGTH);
+            return Success;
+        }
+    }
+    return ItemNotFound;
+}
+
+ResultCode ParseBody(char* buffer, HTTPRequest* request) {
+    strncpy(request->Body, buffer + 4, request->BodySize);
     return Success;
 }

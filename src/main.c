@@ -2,8 +2,10 @@
 
 #include "../include/HTTPServer.h"
 
+#define BUFFER_SIZE 1000
+
 int main() {
-    char buffer[1000];
+    char buffer[BUFFER_SIZE];
 
     FILE* file = fopen("test.txt", "r");
     if (file == NULL) {
@@ -11,7 +13,7 @@ int main() {
         return 1;
     }
 
-    int result = ReadIncomingData(file, buffer, 1000);
+    int result = ReadIncomingData(file, buffer, BUFFER_SIZE);
     if (result > 0) {
         PrintErrorMessage(result);
         return 1;
@@ -19,12 +21,24 @@ int main() {
 
     printf("%s", buffer);
 
+    int headerSize;
     HTTPRequest request = {0};
-    result = ParseHTTPHeaders(buffer, &request);
+    result = ParseHTTPHeaders(buffer, BUFFER_SIZE, &request, &headerSize);
     if (result > 0) {
         PrintErrorMessage(result);
         return 1;
     }
+
+    GetBodySize(&request);
+    if (request.BodySize == 0) {
+        return 0;
+    }
+
+    if (headerSize + request.BodySize > BUFFER_SIZE) {
+        ReadIncomingData(file, buffer + headerSize, headerSize + request.BodySize - BUFFER_SIZE);
+    }
+
+    ParseBody(buffer + headerSize, &request);
 
     return 0;
 }

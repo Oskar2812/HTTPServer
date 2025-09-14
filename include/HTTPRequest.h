@@ -37,8 +37,13 @@ typedef struct {
     HTTPRequestLine RequestLine;
     HTTPHeader Header[MAX_HEADERS];
     char Body[MAX_BODY_LENGTH];
+    int NHeaders;
+    int BodySize;
 } HTTPRequest;
 
-ResultCode ParseHTTPHeaders(char* buffer, HTTPRequest* request);
+ResultCode ParseHTTPHeaders(char* buffer, int bufferSize, HTTPRequest* request, int* headerSize);
+ResultCode GetBodySize(HTTPRequest* request);
+ResultCode GetHeaderValue(HTTPRequest* request, char* headerName, char* headerValue);
+ResultCode ParseBody(char* buffer, HTTPRequest* request);
 
 #endif 

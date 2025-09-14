@@ -10,6 +10,8 @@ typedef enum {
     InvalidHttpMethod,
     InvalidHttpVersion,
     InvalidRequestLine,
+    HeadersTooLong,
+    ItemNotFound
 } ResultCode;
 
 void GetErrorMessage(ResultCode resultCode, char* buffer);
