@@ -1,50 +1,48 @@
-CC = gcc
+CC = clang
 CFLAGS = -Wall -Wextra
 OPT = -O0
-BIN = bin
-SRC = src
-TARGET  = example
-DBIN    = $(BIN)/debug
-DTARGET = example_debug
-OBJ = $(BIN)/ResultCodes.o $(BIN)/Server.o $(BIN)/HTTPRequest.o
-DOBJ = $(DBIN)/ResultCodes.o $(DBIN)/Server.o $(DBIN)/HTTPRequest.o
 
-all: $(TARGET)
+BIN_DIR = bin
+SRC_DIR = src
+BUILD_DIR = build
 
-# ------------------------
-# Release build
-# ------------------------
-$(TARGET): $(BIN)/main.o $(OBJ)
-	$(CC) $(CFLAGS) $(OPT) -o $@ $^
+SRC = $(wildcard $(SRC_DIR)/*.c)
+OBJ = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRC))
 
-$(BIN)/%.o: $(SRC)/%.c | $(BIN)
+MAIN = main.c
+
+# Output library
+LIB = libOskServer.a
+
+# Default target
+all: lib
+
+lib: $(LIB)
+
+debug: OPT = -O0
+debug: CFLAGS += -g
+debug: clean main
+
+main: lib
+	$(CC) $(CFLAGS) $(OPT) main.c $(LIB) -o main.exe
+
+
+# Create static library
+$(LIB): $(OBJ)
+	ar rcs $@ $^
+
+# Compile source files to object files
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+	@if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(OPT) -c $< -o $@
 
-# ------------------------
-# Debug build
-# ------------------------
-debug: $(DTARGET)
-
-$(DTARGET): $(DBIN)/main.o $(DOBJ)
-	$(CC) $(CFLAGS) -g -O0 -o $@ $^
-
-$(DBIN)/%.o: $(SRC)/%.c | $(DBIN)
-	$(CC) $(CFLAGS) -g -O0 -c $< -o $@
-
-# ------------------------
-# Ensure bin directories exist
-# ------------------------
-$(BIN):
-	mkdir -p $(BIN)
-
-$(DBIN):
-	mkdir -p $(DBIN)
-
-# ------------------------
-# Cleanup
-# ------------------------
+# Clean build artifacts
 clean:
-	rm -rf $(BIN) $(TARGET) $(DTARGET)
+	rmdir /s /q $(BUILD_DIR) 
+	del $(LIB)
 
-.PHONY: all clean debug
+# Rebuild everything
+re: clean all
+
+
 

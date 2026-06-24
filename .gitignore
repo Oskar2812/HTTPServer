@@ -56,3 +56,6 @@ dkms.conf
 example
 test.txt
 example_debug
+.vscode/c_cpp_properties.json
+build
+main.c
