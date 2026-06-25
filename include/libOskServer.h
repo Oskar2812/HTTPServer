@@ -12,10 +12,6 @@ typedef struct {
     size_t Count;
 } StringView;
 
-typedef struct {
-    int value;
-} HTTPRequest;
-
 // TODO: Add all HTTP methods 
 typedef enum {
     NO_METHOD,
@@ -37,6 +33,19 @@ typedef struct {
     StringView Target;
     HTTPVersion Version;
 } RequestLine;
+
+typedef struct {
+    StringView FieldName;
+    StringView FieldValue;
+} FieldLine;
+
+typedef struct {
+    RequestLine RequestLine;
+    FieldLine* Headers;
+    size_t HeaderCount;
+} HTTPRequest;
+
+int ParseRequestLine(RequestLine* requestLine, char* buffer, size_t bufferCount);
 
 #endif
 

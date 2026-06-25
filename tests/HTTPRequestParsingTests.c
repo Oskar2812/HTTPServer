@@ -3,8 +3,6 @@
 #include "../src/HTTPRequestParsing.c"
 
 int ParseRequestLine_ValidRequestString_GET_ParseSuccesful() {
-    printf("Running ParseRequestLine_ValidRequestString_GET_ParseSuccesful\n");
-
     char* request = "GET /pub/WWW/TheProject.html HTTP/1.1\r\n";
 
     RequestLine requestLine = {0};
@@ -28,13 +26,10 @@ int ParseRequestLine_ValidRequestString_GET_ParseSuccesful() {
         return -1;
     }
 
-    printf("Test complete\n");
     return 0;
 }
 
 int ParseRequestLine_ValidRequestString_PUT_ParseSuccesful() {
-    printf("Running ParseRequestLine_ValidRequestString_PUT_ParseSuccesful\n");
-
     char* request = "PUT /pub/WWW/TheProject.html HTTP/1.1\r\n";
 
     RequestLine requestLine = {0};
@@ -58,13 +53,10 @@ int ParseRequestLine_ValidRequestString_PUT_ParseSuccesful() {
         return -1;
     }
 
-    printf("Test complete\n");
     return 0;
 }
 
 int ParseRequestLine_ValidRequestString_POST_ParseSuccesful() {
-    printf("Running ParseRequestLine_ValidRequestString_POST_ParseSuccesful\n");
-
     char* request = "POST /pub/WWW/TheProject.html HTTP/1.1\r\n";
 
     RequestLine requestLine = {0};
@@ -88,13 +80,10 @@ int ParseRequestLine_ValidRequestString_POST_ParseSuccesful() {
         return -1;
     }
 
-    printf("Test complete\n");
     return 0;
 }
 
 int ParseRequestLine_ValidRequestString_DELETE_ParseSuccesful() {
-    printf("Running ParseRequestLine_ValidRequestString_DELETE_ParseSuccesful\n");
-
     char* request = "DELETE /pub/WWW/TheProject.html HTTP/1.1\r\n";
 
     RequestLine requestLine = {0};
@@ -118,13 +107,10 @@ int ParseRequestLine_ValidRequestString_DELETE_ParseSuccesful() {
         return -1;
     }
 
-    printf("Test complete\n");
     return 0;
 }
 
 int ParseRequestLine_ValidRequestString_v2_ParseSuccesful() {
-    printf("Running ParseRequestLine_ValidRequestString_V2_ParseSuccesful\n");
-
     char* request = "GET /pub/WWW/TheProject.html HTTP/2\r\n";
 
     RequestLine requestLine = {0};
@@ -148,13 +134,10 @@ int ParseRequestLine_ValidRequestString_v2_ParseSuccesful() {
         return -1;
     }
 
-    printf("Test complete\n");
     return 0;
 }
 
 int ParseRequestLine_ValidRequestString_v3_ParseSuccesful() {
-    printf("Running ParseRequestLine_ValidRequestString_V3_ParseSuccesful\n");
-
     char* request = "GET /pub/WWW/TheProject.html HTTP/3\r\n";
 
     RequestLine requestLine = {0};
@@ -178,13 +161,10 @@ int ParseRequestLine_ValidRequestString_v3_ParseSuccesful() {
         return -1;
     }
 
-    printf("Test complete\n");
     return 0;
 }
 
 int ParseRequestLine_InvalidRequestString_Method_ParseUnsuccesful() {
-    printf("Running ParseRequestLine_ValidRequestString_V3_ParseSuccesful\n");
-
     char* request = "GETtyoy /pub/WWW/TheProject.html HTTP/3\r\n";
 
     RequestLine requestLine = {0};
@@ -194,13 +174,10 @@ int ParseRequestLine_InvalidRequestString_Method_ParseUnsuccesful() {
         return -1;
     }
 
-    printf("Test complete\n");
     return 0;
 }
 
 int ParseRequestLine_InvalidRequestString_Version_ParseUnsuccesful() {
-    printf("Running ParseRequestLine_ValidRequestString_V3_ParseSuccesful\n");
-
     char* request = "GETtyoy /pub/WWW/TheProject.html v7.2\r\n";
 
     RequestLine requestLine = {0};
@@ -210,6 +187,74 @@ int ParseRequestLine_InvalidRequestString_Version_ParseUnsuccesful() {
         return -1;
     }
 
-    printf("Test complete\n");
+    return 0;
+}
+
+int ParseFieldLine_ValidFieldLine_WithBlank_ParseSuccesful() {
+    char* header = "Header1: with blank\r\n";
+
+    FieldLine fieldLine = {0};
+
+    if (ParseFieldLine(&fieldLine, header, 23) == -1) {
+        printf("Parsing field line failed");
+    }
+
+    if (strncmp("Header1", fieldLine.FieldName.Content, fieldLine.FieldName.Count) != 0) {
+        printf("Incorrect header name");
+    }
+    if (strncmp("with blank", fieldLine.FieldValue.Content, fieldLine.FieldValue.Count) != 0) {
+        printf("Incorrect header value");
+    }
+
+    return 0;
+}
+
+int ParseFieldLine_ValidFieldLine_WithoutBlank_ParseSuccesful() {
+    char* header = "Header1:without blank\r\n";
+
+    FieldLine fieldLine = {0};
+
+    if (ParseFieldLine(&fieldLine, header, 25) == -1) {
+        printf("Parsing field line failed");
+    }
+
+    if (strncmp("Header1", fieldLine.FieldName.Content, fieldLine.FieldName.Count) != 0) {
+        printf("Incorrect header name");
+    }
+    if (strncmp("without blank", fieldLine.FieldValue.Content, fieldLine.FieldValue.Count) != 0) {
+        printf("Incorrect header value");
+    }
+
+    return 0;
+}
+
+int ParseFieldLine_ValidFieldLine_TrailingWhitespace_ParseSuccesful() {
+    char* header = "Header1:without blank    \r\n";
+
+    FieldLine fieldLine = {0};
+
+    if (ParseFieldLine(&fieldLine, header, 29) == -1) {
+        printf("Parsing field line failed");
+    }
+
+    if (strncmp("Header1", fieldLine.FieldName.Content, fieldLine.FieldName.Count) != 0) {
+        printf("Incorrect header name");
+    }
+    if (strncmp("without blank", fieldLine.FieldValue.Content, fieldLine.FieldValue.Count) != 0) {
+        printf("Incorrect header value");
+    }
+
+    return 0;
+}
+
+int ParseFieldLine_ValidFieldLine_NoColon_ParseUnsuccesful() {
+    char* header = "Header1without blank\r\n";
+
+    FieldLine fieldLine = {0};
+
+    if (ParseFieldLine(&fieldLine, header, 25) != -1) {
+        printf("Failed to catch invalid header");
+    }
+
     return 0;
 }

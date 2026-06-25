@@ -1,6 +1,7 @@
 #include "../include/libOskServer.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 typedef struct {
     StringView* Tokens;
@@ -156,6 +157,81 @@ int ParseRequestLine(RequestLine* requestLine, char* buffer, size_t bufferCount)
     requestLine->Version = version;
 
     free(tokenList.Tokens);
+
+    return 0;
+}
+
+bool IsInvalidFieldNameCharacter(char character) {
+    if (character == ' ' || character == '\r' || character == '\n') {
+        return true;
+    }
+
+    return false;
+}
+
+int GetFieldName(StringView* fieldName, char* buffer, size_t bufferCount) {
+    if (bufferCount == 0 || buffer[0] == ':' || IsInvalidFieldNameCharacter(buffer[0])) {
+        return -1;
+    }
+
+    for (size_t i = 0; i < bufferCount; i++) {
+        if (IsInvalidFieldNameCharacter(buffer[i])) {
+            return -1;
+        }
+        if (buffer[i] == ':') {
+            fieldName->Content = buffer;
+            fieldName->Count = i;
+
+            if (i + 1 < bufferCount && buffer[i + 1] == ' ') {
+                return i + 2;
+            }
+            else return i + 1;
+        }
+
+    }
+
+    return -1;
+}
+
+int GetFieldValue(StringView* fieldValue, char* buffer, size_t bufferCount) {
+    if (bufferCount == 0 || IsInvalidFieldNameCharacter(buffer[0])) {
+        return -1;
+    }
+
+    if (GetLine(fieldValue, buffer, bufferCount) == -1) {
+        return -1;
+    }
+
+    size_t newCount = fieldValue->Count;
+    for (size_t i = fieldValue->Count - 1; i >= 0; i--) {
+        if (fieldValue->Content[i] == ' ') {
+            newCount--;
+        }
+        else {
+            break;
+        }
+    }
+    fieldValue->Count = newCount;
+
+    return 0;
+}
+
+int ParseFieldLine(FieldLine* fieldLine, char* buffer, size_t bufferCount) {
+    StringView fieldName = {0};
+    StringView fieldValue = {0};
+
+    int fieldValueOffset = GetFieldName(&fieldName, buffer, bufferCount);
+    if (fieldValueOffset == -1) {
+        return -1;
+    }
+
+    if (GetFieldValue(&fieldValue, buffer + fieldValueOffset, bufferCount) == -1)
+    {
+        return -1;
+    }
+
+    fieldLine->FieldName = fieldName;
+    fieldLine->FieldValue = fieldValue;
 
     return 0;
 }
