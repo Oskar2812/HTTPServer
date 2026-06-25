@@ -1,5 +1,6 @@
 #include "../include/libOskServer.h"
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct {
     StringView* Tokens;
@@ -91,3 +92,71 @@ int GetTokenList(TokenList* result, char* buffer, size_t bufferCount) {
 
     return result->Count;
 }
+
+HTTPMethod ParseHTTPMethod(StringView method) {
+    if (method.Count == 3 && strncmp("GET", method.Content, 3) == 0) {
+        return GET;
+    }
+    else if (method.Count == 3 && strncmp("PUT", method.Content, 3) == 0)
+    {
+        return PUT;
+    }
+    else if (method.Count == 4 && strncmp("POST", method.Content, 4) == 0) {
+        return POST;
+    }
+    else if (method.Count == 6 && strncmp("DELETE", method.Content, 6) == 0) {
+        return DELETE;
+    }
+    else {
+        return NO_METHOD;
+    }
+}
+
+HTTPVersion ParseHTTPVersion(StringView version) {
+    if (version.Count == 8 && strncmp("HTTP/1.1", version.Content, 8) == 0) {
+        return V_ONE;
+    }
+    else if (version.Count == 6 && strncmp("HTTP/2", version.Content, 6) == 0) {
+        return V_TWO;
+    }
+    else if (version.Count == 6 && strncmp("HTTP/3", version.Content, 6) == 0) {
+        return V_THREE;
+    }
+    else {
+        return NO_VERSION;
+    }
+}
+
+/// @brief Parses a line of the request into the RequestLine struct
+/// @param requestLine the RequestLine to populate
+/// @param buffer the text buffer to read from 
+/// @param bufferCount size of the buffer
+/// @return 0 on success, -1 on failure
+int ParseRequestLine(RequestLine* requestLine, char* buffer, size_t bufferCount) {
+    
+    // Tokenise the line
+    TokenList tokenList = {0};
+    if (GetTokenList(&tokenList, buffer, bufferCount) != 3) {
+        return -1;
+    }
+
+    // Parse into HTTPRequest struct
+    HTTPMethod method = ParseHTTPMethod(tokenList.Tokens[0]);
+    if (method == NO_METHOD) {
+        return -1;
+    }
+    requestLine->Method = method;
+
+    requestLine->Target = tokenList.Tokens[1];
+
+    HTTPVersion version = ParseHTTPVersion(tokenList.Tokens[2]);
+    if (version == NO_VERSION) {
+        return -1;
+    }
+    requestLine->Version = version;
+
+    free(tokenList.Tokens);
+
+    return 0;
+}
+

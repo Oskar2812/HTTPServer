@@ -16,21 +16,27 @@ typedef struct {
     int value;
 } HTTPRequest;
 
+// TODO: Add all HTTP methods 
 typedef enum {
-    GET
+    NO_METHOD,
+    GET,
+    POST,
+    PUT,
+    DELETE
 } HTTPMethod;
 
 typedef enum {
-    V_ONE
+    NO_VERSION,
+    V_ONE,
+    V_TWO,
+    V_THREE 
 } HTTPVersion;
 
 typedef struct {
     HTTPMethod Method;
-    char* Target;
+    StringView Target;
     HTTPVersion Version;
 } RequestLine;
-
-
 
 #endif
 
