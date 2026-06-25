@@ -6,6 +6,12 @@
 #define CRFL "\r\n"
 
 //######################################## HTTP Request #######################################################################################
+
+typedef struct {
+    char* Content;
+    size_t Count;
+} StringView;
+
 typedef struct {
     int value;
 } HTTPRequest;

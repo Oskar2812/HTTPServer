@@ -24,7 +24,7 @@ debug: CFLAGS += -g
 debug: clean main
 
 main: lib
-	$(CC) $(CFLAGS) $(OPT) main.c $(LIB) -o main.exe
+	$(CC) $(CFLAGS) $(OPT) main.c $(LIB) -o app.exe
 
 
 # Create static library
@@ -40,6 +40,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 clean:
 	rmdir /s /q $(BUILD_DIR) 
 	del $(LIB)
+	del app.exe
 
 # Rebuild everything
 re: clean all
