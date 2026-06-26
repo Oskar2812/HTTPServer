@@ -261,7 +261,7 @@ void AddHeader(RequestHeaders* list, FieldLine token) {
     list->FieldLines[list->Count++] = token;
 }
 
-/// @brief Parses all headers into a dynamic array
+/// @brief Parses all headers into a dynamic array (AALOCATES MEMORY)
 /// @param headers The array to parse into
 /// @param buffer the buffer ot read from
 /// @param bufferCount the size of the buffer
