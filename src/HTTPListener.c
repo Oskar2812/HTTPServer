@@ -1,8 +1,6 @@
 #include "../include/libOskServer.h"
 #include "../include/InternalUtilityMacros.h"
 
-#include <stdio.h>
-
 #define MAX_BUFFER_SIZE 32768
 #define KB 8192
 
@@ -71,8 +69,6 @@ int ReadPreamble(TextBuffer* buffer, SOCKET clientSocket) {
         if (bytes == SOCKET_ERROR) {
             return -1;
         }
-
-        printf("recv returned: %d\n", bytes);
 
         buffer->Count += bytes;
         if (buffer->Count + 1 == buffer->Capacity) {
