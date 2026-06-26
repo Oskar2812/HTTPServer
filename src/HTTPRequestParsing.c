@@ -169,6 +169,11 @@ bool IsInvalidFieldNameCharacter(char character) {
     return false;
 }
 
+/// @brief Given a line gets the field name (i.e. the string before the :)
+/// @param fieldName The result to read into
+/// @param buffer the buffer to from 
+/// @param bufferCount the size of the buffer
+/// @return the offset to the start of the field value (accounting for an optional whitespace) or -1 on failure
 int GetFieldName(StringView* fieldName, char* buffer, size_t bufferCount) {
     if (bufferCount == 0 || buffer[0] == ':' || IsInvalidFieldNameCharacter(buffer[0])) {
         return -1;
@@ -193,6 +198,11 @@ int GetFieldName(StringView* fieldName, char* buffer, size_t bufferCount) {
     return -1;
 }
 
+/// @brief Gets the field value given a string (goes until \r\n and gets rid of trailing whitespece)
+/// @param fieldValue fieldValue to read into 
+/// @param buffer buffer to read from
+/// @param bufferCount size of buffer
+/// @return 0 on succes, -1 on failure
 int GetFieldValue(StringView* fieldValue, char* buffer, size_t bufferCount) {
     if (bufferCount == 0 || IsInvalidFieldNameCharacter(buffer[0])) {
         return -1;
@@ -216,6 +226,11 @@ int GetFieldValue(StringView* fieldValue, char* buffer, size_t bufferCount) {
     return 0;
 }
 
+/// @brief Parse a field line
+/// @param fieldLine the fieldLine to read into 
+/// @param buffer the buffer to read from
+/// @param bufferCount the size of the buffer
+/// @return 0 on success, -1 on failure
 int ParseFieldLine(FieldLine* fieldLine, char* buffer, size_t bufferCount) {
     StringView fieldName = {0};
     StringView fieldValue = {0};
@@ -234,5 +249,47 @@ int ParseFieldLine(FieldLine* fieldLine, char* buffer, size_t bufferCount) {
     fieldLine->FieldValue = fieldValue;
 
     return 0;
+}
+
+void AddHeader(RequestHeaders* list, FieldLine token) {
+    if (list->Count == list->Capacity) {
+        size_t newCap = (list->Capacity == 0) ? 4 : list->Capacity * 2;
+        list->FieldLines = realloc(list->FieldLines, newCap * sizeof(FieldLine));
+        list->Capacity = newCap;
+    }
+
+    list->FieldLines[list->Count++] = token;
+}
+
+/// @brief Parses all headers into a dynamic array
+/// @param headers The array to parse into
+/// @param buffer the buffer ot read from
+/// @param bufferCount the size of the buffer
+/// @return size of array on succes, -1 on failure
+int ParseHeaders(RequestHeaders* headers, char* buffer, size_t bufferCount) {
+    int globalOffset = 0;
+
+    for (size_t i = 0; i < MAX_HEADERS; i++) {
+        StringView line = {0};
+        FieldLine fieldLine = {0};
+
+        int nextLineOffset = GetLine(&line, buffer + globalOffset, bufferCount - globalOffset);
+
+        if (nextLineOffset == -1) {
+            return -1;
+        }
+        else if (nextLineOffset == 2) {
+            return headers->Count;
+        }
+
+        if (ParseFieldLine(&fieldLine, line.Content, line.Count) == -1) {
+            return -1;
+        }    
+
+        AddHeader(headers, fieldLine);
+        globalOffset += nextLineOffset;
+    }
+
+    return -1;
 }
 

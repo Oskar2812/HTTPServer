@@ -2,10 +2,9 @@
 #define LIB_OSK_SERVER_H
 
 #include <stdint.h>
-
-#define CRFL "\r\n"
-
 //######################################## HTTP Request #######################################################################################
+
+#define MAX_HEADERS 50
 
 typedef struct {
     char* Content;
@@ -40,9 +39,14 @@ typedef struct {
 } FieldLine;
 
 typedef struct {
+    FieldLine* FieldLines;
+    size_t Count;
+    size_t Capacity;
+} RequestHeaders;
+
+typedef struct {
     RequestLine RequestLine;
-    FieldLine* Headers;
-    size_t HeaderCount;
+    RequestHeaders Headers;
 } HTTPRequest;
 
 int ParseRequestLine(RequestLine* requestLine, char* buffer, size_t bufferCount);
