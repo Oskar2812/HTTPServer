@@ -1,4 +1,5 @@
 #include "../include/libOskServer.h"
+#include "../include/InternalUtilityMacros.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
@@ -39,7 +40,8 @@ int GetToken(StringView* result, char* buffer, size_t bufferCount) {
         return 0;
     }
 
-    for (size_t i = 0; i < bufferCount; i++) {
+    size_t i = 0;
+    for (; i < bufferCount; i++) {
         if (buffer[i] == ' ') {
             result->Content = buffer;
             result->Count = i;
@@ -55,7 +57,9 @@ int GetToken(StringView* result, char* buffer, size_t bufferCount) {
         }
     }
 
-    return -1;
+    result->Content = buffer;
+    result->Count = i;
+    return 0;
 }
 
 void AddToken(TokenList* list, StringView token) {
@@ -78,9 +82,8 @@ int GetTokenList(TokenList* result, char* buffer, size_t bufferCount) {
         StringView token;
         
         int size = GetToken(&token, buffer + i, bufferCount - i);
-        if (size == -1) {
-            return -1;
-        } else if (size == 0) {
+        ASSERT_SUCCESS(size);
+        if (size == 0) {
             if (token.Count > 0) {
                 AddToken(result, token);
             }
@@ -106,7 +109,7 @@ HTTPMethod ParseHTTPMethod(StringView method) {
         return POST;
     }
     else if (method.Count == 6 && strncmp("DELETE", method.Content, 6) == 0) {
-        return DELETE;
+        return DELETE_METHOD;
     }
     else {
         return NO_METHOD;
@@ -208,9 +211,7 @@ int GetFieldValue(StringView* fieldValue, char* buffer, size_t bufferCount) {
         return -1;
     }
 
-    if (GetLine(fieldValue, buffer, bufferCount) == -1) {
-        return -1;
-    }
+    ASSERT_SUCCESS(GetLine(fieldValue, buffer, bufferCount));
 
     size_t newCount = fieldValue->Count;
     for (size_t i = fieldValue->Count - 1; i >= 0; i--) {
@@ -236,14 +237,9 @@ int ParseFieldLine(FieldLine* fieldLine, char* buffer, size_t bufferCount) {
     StringView fieldValue = {0};
 
     int fieldValueOffset = GetFieldName(&fieldName, buffer, bufferCount);
-    if (fieldValueOffset == -1) {
-        return -1;
-    }
 
-    if (GetFieldValue(&fieldValue, buffer + fieldValueOffset, bufferCount) == -1)
-    {
-        return -1;
-    }
+    ASSERT_SUCCESS(fieldValueOffset);
+    ASSERT_SUCCESS(GetFieldValue(&fieldValue, buffer + fieldValueOffset, bufferCount));
 
     fieldLine->FieldName = fieldName;
     fieldLine->FieldValue = fieldValue;
@@ -265,7 +261,7 @@ void AddHeader(RequestHeaders* list, FieldLine token) {
 /// @param headers The array to parse into
 /// @param buffer the buffer ot read from
 /// @param bufferCount the size of the buffer
-/// @return size of array on succes, -1 on failure
+/// @return offset to end of headers on success, -1 on failure
 int ParseHeaders(RequestHeaders* headers, char* buffer, size_t bufferCount) {
     int globalOffset = 0;
 
@@ -275,21 +271,42 @@ int ParseHeaders(RequestHeaders* headers, char* buffer, size_t bufferCount) {
 
         int nextLineOffset = GetLine(&line, buffer + globalOffset, bufferCount - globalOffset);
 
-        if (nextLineOffset == -1) {
-            return -1;
+        ASSERT_SUCCESS(nextLineOffset);
+        if (nextLineOffset == 2) {
+            return globalOffset + nextLineOffset;
         }
-        else if (nextLineOffset == 2) {
-            return headers->Count;
-        }
-
-        if (ParseFieldLine(&fieldLine, line.Content, line.Count) == -1) {
-            return -1;
-        }    
+  
+        ASSERT_SUCCESS(ParseFieldLine(&fieldLine, line.Content, line.Count));
 
         AddHeader(headers, fieldLine);
         globalOffset += nextLineOffset;
     }
 
     return -1;
+}
+
+/// @brief Parses full message peramble
+/// @param request request to read into
+/// @param buffer buffer to read from
+/// @param bufferCount sbuffer
+/// @return offset to end of preamble on succes, -1 on failure
+int ParseMessagePreamble(HTTPRequest* request, char* buffer, size_t bufferCount) {
+    StringView requestLineString = {0};
+    RequestLine requestLine = {0};
+    RequestHeaders headers = {0};
+
+    int requestLineOffset = GetLine(&requestLineString, buffer, bufferCount);
+    ASSERT_SUCCESS(requestLineOffset);
+
+    ASSERT_SUCCESS(ParseRequestLine(&requestLine, requestLineString.Content, requestLineString.Count));
+
+    request->RequestLine = requestLine;
+
+    int endOfHeadersOffset = ParseHeaders(&headers, buffer + requestLineOffset, bufferCount - requestLineOffset);
+    ASSERT_SUCCESS(endOfHeadersOffset);
+
+    request->Headers = headers;
+
+    return requestLineOffset + endOfHeadersOffset;
 }
 

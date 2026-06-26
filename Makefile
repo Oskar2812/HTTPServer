@@ -1,5 +1,6 @@
 CC = clang
 CFLAGS = -Wall -Wextra
+LINK_FLAGS = -lws2_32
 OPT = -O0
 
 BIN_DIR = bin
@@ -28,7 +29,7 @@ debug: CFLAGS += -g
 debug: clean main
 
 main: lib
-	$(CC) $(CFLAGS) $(OPT) main.c $(LIB) -o app.exe
+	$(CC) $(CFLAGS) $(OPT) main.c $(LIB) -o app.exe $(LINK_FLAGS)
 
 run_main: main
 	./app

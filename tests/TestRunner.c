@@ -38,6 +38,7 @@ int main() {
     RUN_TEST(ParseFieldLine_ValidFieldLine_WithoutBlank_ParseSuccesful(), totalTests, failedTests);
     RUN_TEST(ParseFieldLine_ValidFieldLine_TrailingWhitespace_ParseSuccesful(), totalTests, failedTests);
     RUN_TEST(ParseFieldLine_ValidFieldLine_NoColon_ParseUnsuccesful(), totalTests, failedTests);
+    RUN_TEST(ParseMessagePreamble_ValidPreamble_ParseSuccesful(), totalTests, failedTests);
 
     printf("------------------------------END OF TESTS--------------------------------\n");
     printf("Tests run: %zu,\nTests failed: %zu\n", totalTests, failedTests);

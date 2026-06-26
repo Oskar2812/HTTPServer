@@ -2,9 +2,11 @@
 #define LIB_OSK_SERVER_H
 
 #include <stdint.h>
+#include <winsock2.h>
 //######################################## HTTP Request #######################################################################################
 
 #define MAX_HEADERS 50
+#define MAX_REQUESTS 10
 
 typedef struct {
     char* Content;
@@ -17,7 +19,7 @@ typedef enum {
     GET,
     POST,
     PUT,
-    DELETE
+    DELETE_METHOD
 } HTTPMethod;
 
 typedef enum {
@@ -49,7 +51,10 @@ typedef struct {
     RequestHeaders Headers;
 } HTTPRequest;
 
-int ParseRequestLine(RequestLine* requestLine, char* buffer, size_t bufferCount);
+typedef struct {
+    SOCKET ServerSocket;
+    SOCKET ClientSockets[MAX_REQUESTS];
+} HTTPServer;
 
 #endif
 
