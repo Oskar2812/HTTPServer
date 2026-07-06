@@ -7,6 +7,7 @@
 
 #define MAX_HEADERS 50
 #define MAX_REQUESTS 10
+#define MAX_HTTP_HEADER_NAME_LENGTH 256 
 
 typedef struct {
     char* Content;
@@ -49,6 +50,7 @@ typedef struct {
 typedef struct {
     RequestLine RequestLine;
     RequestHeaders Headers;
+    StringView Body;
 } HTTPRequest;
 
 typedef struct {
@@ -56,6 +58,11 @@ typedef struct {
     SOCKET ClientSockets[MAX_REQUESTS];
 } HTTPServer;
 
+/// @brief Retrieves the value of a specifc header
+/// @param request the request to search
+/// @param headerName name of the header
+/// @param size of header name (do not include null terminator in count)
+/// @return A FieldLine containing the header. (Note this points at the actual underlying memory stroing the requets modifiying the strings within will modify the request)
+FieldLine* GetHeaderValue(HTTPRequest* request, char headerName[MAX_HTTP_HEADER_NAME_LENGTH], size_t nameCount);
+
 #endif
-
-

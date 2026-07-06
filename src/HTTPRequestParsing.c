@@ -239,6 +239,9 @@ int ParseFieldLine(FieldLine* fieldLine, char* buffer, size_t bufferCount) {
     int fieldValueOffset = GetFieldName(&fieldName, buffer, bufferCount);
 
     ASSERT_SUCCESS(fieldValueOffset);
+    if (fieldName.Count > MAX_HTTP_HEADER_NAME_LENGTH) {
+        return -1;
+    }
     ASSERT_SUCCESS(GetFieldValue(&fieldValue, buffer + fieldValueOffset, bufferCount));
 
     fieldLine->FieldName = fieldName;
