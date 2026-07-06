@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <winsock2.h>
+#include <stdio.h>
 //######################################## HTTP Request #######################################################################################
 
 #define MAX_HEADERS 50
@@ -53,10 +54,7 @@ typedef struct {
     StringView Body;
 } HTTPRequest;
 
-typedef struct {
-    SOCKET ServerSocket;
-    SOCKET ClientSockets[MAX_REQUESTS];
-} HTTPServer;
+
 
 /// @brief Retrieves the value of a specifc header
 /// @param request the request to search
@@ -64,5 +62,31 @@ typedef struct {
 /// @param size of header name (do not include null terminator in count)
 /// @return A FieldLine containing the header. (Note this points at the actual underlying memory stroing the requets modifiying the strings within will modify the request)
 FieldLine* GetHeaderValue(HTTPRequest* request, char headerName[MAX_HTTP_HEADER_NAME_LENGTH], size_t nameCount);
+
+//######################################## HTTP Server #########################################################################################
+typedef enum {
+    LOG_DEBUG = 0,
+    LOG_INFO = 1,
+    LOG_WARNING = 2,
+    LOG_ERROR = 3,
+} LogLevel;
+
+typedef struct {
+    FILE* Stream;
+    LogLevel MinimumLogLevel;
+} LogDetail;
+
+typedef struct {
+    SOCKET ServerSocket;
+    LogDetail Logging;
+} HTTPServer;
+
+void SetLogging(HTTPServer* server, FILE* stream, LogLevel minimumLogLevel);
+
+int InitialiseServer(HTTPServer* server, uint16_t port);
+
+int StartServer(HTTPServer* server);
+
+int StopServer(HTTPServer* server);
 
 #endif

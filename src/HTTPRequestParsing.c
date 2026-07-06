@@ -1,5 +1,6 @@
 #include "../include/libOskServer.h"
-#include "../include/InternalUtilityMacros.h"
+#include "../include/Internal_UtilityMacros.h"
+#include "../include/Internal_HTTPRequestParsing.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
@@ -288,11 +289,6 @@ int ParseHeaders(RequestHeaders* headers, char* buffer, size_t bufferCount) {
     return -1;
 }
 
-/// @brief Parses full message peramble
-/// @param request request to read into
-/// @param buffer buffer to read from
-/// @param bufferCount sbuffer
-/// @return offset to end of preamble on succes, -1 on failure
 int ParseMessagePreamble(HTTPRequest* request, char* buffer, size_t bufferCount) {
     StringView requestLineString = {0};
     RequestLine requestLine = {0};
