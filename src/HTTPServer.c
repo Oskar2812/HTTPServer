@@ -74,10 +74,12 @@ int InitialiseServer(HTTPServer* server, uint16_t port) {
 }
 
 int HandleConnection(HTTPServer* server, SOCKET client) {
-     TextBuffer buffer = {0};
+    TextBuffer buffer = {0};
+
+    ASSERT_AND_LOG_SUCCESS(server, -1, "Testing %d", 69420);
 
     int preambleOffset = ReadPreamble(&buffer, client);
-    ASSERT_SUCCESS(preambleOffset);
+    ASSERT_AND_LOG_SUCCESS(server, preambleOffset, "Socket %d - Failed to read request line and headers into buffer", client);
 
     StringView preamble = {
         .Content = buffer.Content,
@@ -86,17 +88,10 @@ int HandleConnection(HTTPServer* server, SOCKET client) {
 
     HTTPRequest request = {0};
     int preambleSize = ParseMessagePreamble(&request, preamble.Content, preamble.Count);
-    ASSERT_SUCCESS(preambleSize);
-
-    printf("Number of headers: %zu\n", request.Headers.Count);
-
-    for(size_t i = 0; i < request.Headers.Count; i++) {
-        PRINT_SV(request.Headers.FieldLines[i].FieldName);
-        PRINT_SV(request.Headers.FieldLines[i].FieldValue);
-    }
+    ASSERT_AND_LOG_SUCCESS(server, preambleSize, "Socket %d - Failed to parse message request line and headers", client);
 
     int bodySize = ReadBody(&buffer, preambleOffset, &request, client);
-    ASSERT_SUCCESS(bodySize);
+    ASSERT_AND_LOG_SUCCESS(server, bodySize, "Socket %d - Failed to read message body into buffer", client);
 
     PRINT_SV(request.Body);
 
@@ -115,15 +110,17 @@ int StartServer(HTTPServer* server) {
     while (1) {
         SOCKET clientSocket = accept(server->ServerSocket, NULL, NULL);
 
-        Log(server, LOG_INFO, "Connection recieved on socket: %d", clientSocket);
+        Log(server, LOG_INFO, "Socket %d - Connection recieved", clientSocket);
 
         HandleConnection(server, clientSocket);
 
-        Log(server, LOG_INFO, "Connection on socket %d handeled", clientSocket);
+        Log(server, LOG_INFO, "Socket %d - Connection handeled", clientSocket);
     }
 }
 
 int StopServer(HTTPServer* server) {
     closesocket(server->ServerSocket);
     WSACleanup();
+
+    return 0;
 }
