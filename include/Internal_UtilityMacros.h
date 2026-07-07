@@ -15,3 +15,6 @@
     printf("%s: %.*s\n", #sv, (int)(sv).Count, (sv).Content)    
 
 #endif
+
+#define MIN(x, y) \
+    (x) < (y) ? (x) : (y)

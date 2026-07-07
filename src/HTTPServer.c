@@ -76,8 +76,6 @@ int InitialiseServer(HTTPServer* server, uint16_t port) {
 int HandleConnection(HTTPServer* server, SOCKET client) {
     TextBuffer buffer = {0};
 
-    ASSERT_AND_LOG_SUCCESS(server, -1, "Testing %d", 69420);
-
     int preambleOffset = ReadPreamble(&buffer, client);
     ASSERT_AND_LOG_SUCCESS(server, preambleOffset, "Socket %d - Failed to read request line and headers into buffer", client);
 
@@ -101,7 +99,8 @@ int HandleConnection(HTTPServer* server, SOCKET client) {
 
     free(buffer.Content);
     free(request.Headers.FieldLines);
-
+    free(request.RequestLine.Target.QueryParameters);
+    
     return 1;
 }
 

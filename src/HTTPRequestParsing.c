@@ -132,6 +132,60 @@ HTTPVersion ParseHTTPVersion(StringView version) {
     }
 }
 
+int ParseQueryParam(RequestTarget* requestTarget, char* queryStart, size_t querySize) {
+    for (size_t i = 0; i < querySize; i++) {
+        if (queryStart[i] == '=') {
+            requestTarget->QueryCount += 1;
+            requestTarget->QueryParameters = realloc(requestTarget->QueryParameters, sizeof(QueryParameter) * requestTarget->QueryCount);
+            requestTarget->QueryParameters[requestTarget->QueryCount - 1].QueryName.Content = queryStart;
+            requestTarget->QueryParameters[requestTarget->QueryCount - 1].QueryName.Count = i;
+            requestTarget->QueryParameters[requestTarget->QueryCount - 1].QueryValue.Content = queryStart + i + 1;
+            requestTarget->QueryParameters[requestTarget->QueryCount - 1].QueryValue.Count = querySize - (i + 2);
+
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
+/// @brief Parse the targeta dn query parameters
+/// @param requestTarget the result struct
+/// @param targetLine the full targte token
+/// @return 0 on success, -1 on failure
+int ParseRequestTarget(RequestTarget* requestTarget, StringView targetLine) {
+
+    size_t targetEnd = 0;
+    for (size_t i = 0; i < targetLine.Count; i++) {
+        if (targetLine.Content[i] == '?') {
+            targetEnd = i;
+            break;
+        }
+    }
+
+    if (targetEnd == 0) {
+        targetEnd = targetLine.Count;
+    }
+
+    requestTarget->Target.Content = targetLine.Content;
+    requestTarget->Target.Count = targetEnd;
+
+    size_t querySize = 0;
+    char* queryStart = targetLine.Content + targetEnd + 1;
+    for (size_t i = targetEnd + 1; i < targetLine.Count; i++) {
+        querySize += 1;
+
+        if (targetLine.Content[i] == '&' || i == targetLine.Count - 1) {
+            ASSERT_SUCCESS(ParseQueryParam(requestTarget, queryStart, querySize));
+            queryStart = queryStart + querySize;
+            querySize = 0;
+        }
+
+    }
+
+    return 0;
+}
+
 /// @brief Parses a line of the request into the RequestLine struct
 /// @param requestLine the RequestLine to populate
 /// @param buffer the text buffer to read from 
@@ -147,17 +201,14 @@ int ParseRequestLine(RequestLine* requestLine, char* buffer, size_t bufferCount)
 
     // Parse into HTTPRequest struct
     HTTPMethod method = ParseHTTPMethod(tokenList.Tokens[0]);
-    if (method == NO_METHOD) {
-        return -1;
-    }
+    ASSERT_SUCCESS(method);
     requestLine->Method = method;
 
-    requestLine->Target = tokenList.Tokens[1];
+    ASSERT_SUCCESS(ParseRequestTarget(&(requestLine->Target), tokenList.Tokens[1]));
 
     HTTPVersion version = ParseHTTPVersion(tokenList.Tokens[2]);
-    if (version == NO_VERSION) {
-        return -1;
-    }
+    ASSERT_SUCCESS(version);
+
     requestLine->Version = version;
 
     free(tokenList.Tokens);

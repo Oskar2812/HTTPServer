@@ -12,7 +12,7 @@ int ParseRequestLine_ValidRequestString_GET_ParseSuccesful() {
             printf("Method not parsed correctly\n");
             return -1;
         }
-        if (strncmp("/pub/WWW/TheProject.html", requestLine.Target.Content, requestLine.Target.Count) != 0) {
+        if (strncmp("/pub/WWW/TheProject.html", requestLine.Target.Target.Content, requestLine.Target.Target.Count) != 0) {
             printf ("Target not parsed correctly\n");
             return -1;
         }
@@ -39,7 +39,7 @@ int ParseRequestLine_ValidRequestString_PUT_ParseSuccesful() {
             printf("Method not parsed correctly\n");
             return -1;
         }
-        if (strncmp("/pub/WWW/TheProject.html", requestLine.Target.Content, requestLine.Target.Count) != 0) {
+        if (strncmp("/pub/WWW/TheProject.html", requestLine.Target.Target.Content, requestLine.Target.Target.Count) != 0) {
             printf ("Target not parsed correctly\n");
             return -1;
         }
@@ -66,7 +66,7 @@ int ParseRequestLine_ValidRequestString_POST_ParseSuccesful() {
             printf("Method not parsed correctly\n");
             return -1;
         }
-        if (strncmp("/pub/WWW/TheProject.html", requestLine.Target.Content, requestLine.Target.Count) != 0) {
+        if (strncmp("/pub/WWW/TheProject.html", requestLine.Target.Target.Content, requestLine.Target.Target.Count) != 0) {
             printf ("Target not parsed correctly\n");
             return -1;
         }
@@ -93,7 +93,7 @@ int ParseRequestLine_ValidRequestString_DELETE_ParseSuccesful() {
             printf("Method not parsed correctly\n");
             return -1;
         }
-        if (strncmp("/pub/WWW/TheProject.html", requestLine.Target.Content, requestLine.Target.Count) != 0) {
+        if (strncmp("/pub/WWW/TheProject.html", requestLine.Target.Target.Content, requestLine.Target.Target.Count) != 0) {
             printf ("Target not parsed correctly\n");
             return -1;
         }
@@ -120,7 +120,7 @@ int ParseRequestLine_ValidRequestString_v2_ParseSuccesful() {
             printf("Method not parsed correctly\n");
             return -1;
         }
-        if (strncmp("/pub/WWW/TheProject.html", requestLine.Target.Content, requestLine.Target.Count) != 0) {
+        if (strncmp("/pub/WWW/TheProject.html", requestLine.Target.Target.Content, requestLine.Target.Target.Count) != 0) {
             printf ("Target not parsed correctly\n");
             return -1;
         }
@@ -147,7 +147,7 @@ int ParseRequestLine_ValidRequestString_v3_ParseSuccesful() {
             printf("Method not parsed correctly\n");
             return -1;
         }
-        if (strncmp("/pub/WWW/TheProject.html", requestLine.Target.Content, requestLine.Target.Count) != 0) {
+        if (strncmp("/pub/WWW/TheProject.html", requestLine.Target.Target.Content, requestLine.Target.Target.Count) != 0) {
             printf ("Target not parsed correctly\n");
             return -1;
         }
@@ -184,6 +184,49 @@ int ParseRequestLine_InvalidRequestString_Version_ParseUnsuccesful() {
 
     if (ParseRequestLine(&requestLine, request, 37) != -1) {
         printf("Invalid version not caught\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+int ParseRequestLine_QueryParameters_ParseSuccesful() {
+    char* request = "GET /pub/WWW/TheProject.html?test=haha&test1=hoho HTTP/3\r\n";
+
+    RequestLine requestLine = {0};
+
+    if (ParseRequestLine(&requestLine, request, 58) == 0) {
+        if (requestLine.Method != GET) {
+            printf("Method not parsed correctly\n");
+            return -1;
+        }
+        if (strncmp("/pub/WWW/TheProject.html", requestLine.Target.Target.Content, requestLine.Target.Target.Count) != 0) {
+            printf ("Target not parsed correctly\n");
+            return -1;
+        }
+        if (requestLine.Target.QueryCount != 2) {
+            printf("Incorrect number of query params read\n");
+            return -1;
+        }
+        if (strncmp("test", requestLine.Target.QueryParameters[0].QueryName.Content, requestLine.Target.QueryParameters[0].QueryName.Count) != 0
+            || strncmp("haha", requestLine.Target.QueryParameters[0].QueryValue.Content, requestLine.Target.QueryParameters[0].QueryValue.Count) != 0 ) {
+
+            printf("First query param parsed incorrectly\n");
+            return -1;
+        }
+        if (strncmp("test1", requestLine.Target.QueryParameters[1].QueryName.Content, requestLine.Target.QueryParameters[1].QueryName.Count) != 0
+            || strncmp("hoho", requestLine.Target.QueryParameters[1].QueryValue.Content, requestLine.Target.QueryParameters[1].QueryValue.Count) != 0 ) {
+
+            printf("Second query param parsed incorrectly\n");
+            return -1;
+        }
+        if (requestLine.Version != V_THREE) {
+            printf("Version not parsed correctly\n");
+            return -1;
+        }
+    }
+    else {
+        printf("Request line parsing failed\n");
         return -1;
     }
 
@@ -287,7 +330,7 @@ int ParseMessagePreamble_ValidPreamble_ParseSuccesful() {
         printf("Incorrect method\n");
         return -1;
     }
-    if (strncmp("/index.html", request.RequestLine.Target.Content, request.RequestLine.Target.Count) != 0) {
+    if (strncmp("/index.html", request.RequestLine.Target.Target.Content, request.RequestLine.Target.Target.Count) != 0) {
         printf("Incorrect target\n");
         return -1;
     }

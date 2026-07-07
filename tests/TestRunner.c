@@ -32,6 +32,7 @@ int main() {
     RUN_TEST(ParseRequestLine_ValidRequestString_DELETE_ParseSuccesful(), totalTests, failedTests);
     RUN_TEST(ParseRequestLine_ValidRequestString_v2_ParseSuccesful(), totalTests, failedTests);
     RUN_TEST(ParseRequestLine_ValidRequestString_v3_ParseSuccesful(), totalTests, failedTests);
+    RUN_TEST(ParseRequestLine_QueryParameters_ParseSuccesful(), totalTests, failedTests);
     RUN_TEST(ParseRequestLine_InvalidRequestString_Method_ParseUnsuccesful(), totalTests, failedTests);
     RUN_TEST(ParseRequestLine_InvalidRequestString_Version_ParseUnsuccesful(), totalTests, failedTests);
     RUN_TEST(ParseFieldLine_ValidFieldLine_WithBlank_ParseSuccesful(), totalTests, failedTests);
