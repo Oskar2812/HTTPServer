@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <winsock2.h>
 #include <stdio.h>
-//######################################## HTTP Request #######################################################################################
+//######################################## HTTP Parsing #######################################################################################
 
 #define MAX_HEADERS 50
 #define MAX_REQUESTS 10
@@ -92,6 +92,8 @@ typedef struct {
     MessageHeaders Headers;
     StringView Body;
 } HTTPResponse;
+
+//######################################## HTTP Helpers #########################################################################################
 
 /// @brief Sets the HTTP version of the response
 /// @param response the response

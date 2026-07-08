@@ -2,7 +2,6 @@
 #include "../include/Internal_UtilityMacros.h"
 #include "../include/Internal_HTTPListener.h"
 
-#define MAX_BUFFER_SIZE 32768 + 1048576
 #define KB 8192
 
 int InitiateListeningPort(HTTPServer* server, uint16_t port) {

@@ -1,4 +1,9 @@
+#ifndef INTERNAL_HTTP_LISTENER  
+#define INTERNAL_HTTP_LISTENER  
+
 #include "libOskServer.h"
+
+#define MAX_BUFFER_SIZE 32768 + 1048576
 
 typedef struct 
 {
@@ -7,6 +12,11 @@ typedef struct
     size_t Capacity;
 } TextBuffer;
 
+/// @brief Allocates memory to the buffer 
+/// @param buffer buffer to alocate
+/// @param bytes how much memory to alocate
+/// @return 0 on success, -1 on failure
+int AllocateBufferMemory(TextBuffer* buffer, uint16_t bytes);
 
 /// @brief Starts the server listening ona specific port 
 /// @param server the server tointialise
@@ -30,3 +40,5 @@ int ReadPreamble(TextBuffer* buffer, SOCKET clientSocket);
 /// @param clientSocket the socket assigned to the client 
 /// @return size of body on success, -1 otherwise 
 int ReadBody(TextBuffer* buffer, size_t preambleOffset, HTTPRequest* request, SOCKET clientSocket);
+
+#endif
