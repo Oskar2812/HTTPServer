@@ -7,6 +7,11 @@ BIN_DIR = bin
 SRC_DIR = src
 BUILD_DIR = build
 TEST_DIR = tests
+EXAMPLES_DIR = examples
+EXAMPLES_BUILD_DIR = bin
+
+EXAMPLE_SRC = $(wildcard $(EXAMPLES_DIR)/*.c)
+EXAMPLE_EXE = $(patsubst $(EXAMPLES_DIR)/%.c,$(EXAMPLES_BUILD_DIR)/%.exe,$(EXAMPLE_SRC))
 
 SRC = $(wildcard $(SRC_DIR)/*.c)
 OBJ = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRC))
@@ -41,6 +46,11 @@ tests:
 run_tests: tests
 	./$(TEST_BIN)
 
+examples: lib $(EXAMPLE_EXE)
+
+$(EXAMPLES_BUILD_DIR)/%.exe: $(EXAMPLES_DIR)/%.c lib
+	@if not exist $(EXAMPLES_BUILD_DIR) mkdir bin
+	$(CC) $(CFLAGS) $(OPT) $< $(LIB) -o $@ $(LINK_FLAGS)
 
 # Create static library
 $(LIB): $(OBJ)
