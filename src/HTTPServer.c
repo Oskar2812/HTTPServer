@@ -1,6 +1,8 @@
 #include "../include/libOskServer.h"
 #include "../include/Internal_HTTPListener.h"
+#include "../include/Internal_HTTPSender.h"
 #include "../include/Internal_HTTPRequestParsing.h"
+#include "../include/Internal_HTTPResponseSerialisation.h"
 #include "../include/Internal_UtilityMacros.h"
 
 #include <time.h>
@@ -73,15 +75,61 @@ int InitialiseServer(HTTPServer* server, uint16_t port) {
     return 0;
 }
 
-int RouteRequest(Endpoint** result, HTTPServer* server, StringView target) {
+int RouteRequest(Endpoint** result, HTTPServer* server, StringView target, HTTPMethod method) {
     for (size_t i = 0; i < server->Endpoints.Count; i++) {
-        if (strncmp(target.Content, server->Endpoints.Content[i].Path, target.Count) == 0) {
+        if (target.Count != strlen(server->Endpoints.Content[i].Path)) {
+            continue;
+        }
+        if (strncmp(target.Content, server->Endpoints.Content[i].Path, target.Count) == 0 && server->Endpoints.Content[i].Method == method) {
             *result = &server->Endpoints.Content[i];
             return 0;
         }
     }
 
     return -1;
+}
+
+int SendNotFound(HTTPResponse* response, SOCKET client) {
+    SetStatus(response, NOT_FOUND);
+
+    TextBuffer buffer = {0};
+    ASSERT_SUCCESS(SerialiseResponse(&buffer, response));
+
+    ASSERT_SUCCESS(SendData(client, &buffer));
+
+    free(buffer.Content);
+
+    return 0;
+}
+
+int AddBodyHeader(HTTPResponse* response) {
+     StringView headerName = {
+        .Content = "Content-Length",
+        .Count = 14,
+    };
+
+    char* buffer = malloc(sizeof(char) * 32);
+    int digits = snprintf(buffer, sizeof(buffer), "%zu", response->Body.Count);
+
+    StringView headerValue = {
+        .Content = buffer,
+        .Count = digits,
+    };
+
+    FieldLine header = {
+        .FieldName = headerName,
+        .FieldValue = headerValue,
+    }; 
+
+    FieldLine* contentLength = GetHeaderValue(&response->Headers, "Content-Length", 14);
+    if (contentLength == NULL) {
+        ASSERT_SUCCESS(AddHeader(&response->Headers, header));
+    }
+    else {
+        contentLength->FieldValue = headerValue;
+    }
+
+    return 0;
 }
 
 int HandleConnection(HTTPServer* server, SOCKET client) {
@@ -106,19 +154,41 @@ int HandleConnection(HTTPServer* server, SOCKET client) {
     Log(server, LOG_INFO, "Socket %d - Message of %d bytes read", client, buffer.Count);
 
     // TODO: Send back a not found in this case
-    Endpoint* endpoint = NULL;
-    ASSERT_AND_LOG_SUCCESS(server, RouteRequest(&endpoint, server, request.RequestLine.Target.Target), "Socket %d - Endpoint %.*s not found", 
-            client, request.RequestLine.Target.Target.Count, request.RequestLine.Target.Target.Content);
-            
     HTTPResponse response = {0};
+    SetVersion(&response, V_ONE);
 
+    Endpoint* endpoint = NULL;
+    if (RouteRequest(&endpoint, server, request.RequestLine.Target.Target, request.RequestLine.Method) == -1) {
+        Log(server, LOG_WARNING, "Socket %d - Endpoint %.*s not found", 
+            client, request.RequestLine.Target.Target.Count, request.RequestLine.Target.Target.Content);
+        ASSERT_AND_LOG_SUCCESS(server, SendNotFound(&response, client), "Socket %d - Failed to send not found response");
+
+        closesocket(client);
+
+        free(buffer.Content);
+        free(request.Headers.FieldLines);
+        free(request.RequestLine.Target.QueryParameters);
+
+        return 0;
+    }
+           
     ASSERT_AND_LOG_SUCCESS(server, endpoint->Callback(server, &response, &request), "Socket %d - Endpoint callback failed", client);
+    if (response.Body.Count > 0) {
+        AddBodyHeader(&response);
+    }
+
+    TextBuffer sendBuffer = {0};
+    ASSERT_AND_LOG_SUCCESS(server, SerialiseResponse(&sendBuffer, &response), "Socket %d - Failed to serialise response", client);
+
+    ASSERT_AND_LOG_SUCCESS(server, SendData(client, &sendBuffer), "Socket %d - Failed to send response to client", client);
 
     closesocket(client);
 
+    free(sendBuffer.Content);
     free(buffer.Content);
     free(request.Headers.FieldLines);
     free(request.RequestLine.Target.QueryParameters);
+    free(response.Body.Content);
     
     return 1;
 }
@@ -144,12 +214,13 @@ int StopServer(HTTPServer* server) {
     return 0;
 }
 
-int AddEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], EndpointCallback callback) {
+int AddEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], HTTPMethod method, EndpointCallback callback) {
     server->Endpoints.Count += 1;
     server->Endpoints.Content = realloc(server->Endpoints.Content, sizeof(Endpoint) * server->Endpoints.Count);
 
     memcpy(server->Endpoints.Content[server->Endpoints.Count - 1].Path, path, MAX_PATH_LENGTH);
     server->Endpoints.Content[server->Endpoints.Count - 1].Callback = callback;
+    server->Endpoints.Content[server->Endpoints.Count - 1].Method = method;
 
     return 0;
 }

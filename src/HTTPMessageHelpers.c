@@ -1,8 +1,8 @@
 #include "../include/libOskServer.h"
 
-FieldLine* GetHeaderValue(HTTPRequest* request, char headerName[MAX_HTTP_HEADER_NAME_LENGTH], size_t nameCount) {
-    for (size_t i = 0; i < request->Headers.Count; i++) {
-        FieldLine* header = &request->Headers.FieldLines[i];
+FieldLine* GetHeaderValue(MessageHeaders* headers, char headerName[MAX_HTTP_HEADER_NAME_LENGTH], size_t nameCount) {
+    for (size_t i = 0; i < headers->Count; i++) {
+        FieldLine* header = &headers->FieldLines[i];
         if (nameCount != header->FieldName.Count) {
             continue;
         }

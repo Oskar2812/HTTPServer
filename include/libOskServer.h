@@ -71,7 +71,7 @@ typedef struct {
 /// @param headerName name of the header
 /// @param size of header name (do not include null terminator in count)
 /// @return A FieldLine containing the header. (Note this points at the actual underlying memory stroing the requets modifiying the strings within will modify the request)
-FieldLine* GetHeaderValue(HTTPRequest* request, char headerName[MAX_HTTP_HEADER_NAME_LENGTH], size_t nameCount);
+FieldLine* GetHeaderValue(MessageHeaders* request, char headerName[MAX_HTTP_HEADER_NAME_LENGTH], size_t nameCount);
 
 //######################################## HTTP Response #########################################################################################
 
@@ -138,6 +138,7 @@ typedef struct HTTPServer HTTPServer;
 typedef int (*EndpointCallback)(HTTPServer* server, HTTPResponse* response, HTTPRequest* request);
 
 typedef struct {
+    HTTPMethod Method;
     char Path[MAX_PATH_LENGTH];
     EndpointCallback Callback;
 } Endpoint;
@@ -187,6 +188,6 @@ int StopServer(HTTPServer* server);
 /// @param path path to endpoint (oriign form)
 /// @param callback callback to call when endpoint gets hit
 /// @return 0 on success, -1 on failure
-int AddEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], EndpointCallback callback);
+int AddEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], HTTPMethod method, EndpointCallback callback);
 
 #endif

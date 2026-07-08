@@ -98,6 +98,9 @@ int SerialiseHeaders(TextBuffer* result, MessageHeaders* headers) {
 }
 
 int SerialiseBody(TextBuffer* result, StringView body) {
+    if (body.Count == 0) {
+        return result->Count;
+    }
     WriteToBuffer(result, body.Content, body.Count);
 
     return result->Count;

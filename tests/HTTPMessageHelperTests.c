@@ -26,7 +26,7 @@ int GetHeaderValue_ValidSearch_ReturnsHeader() {
 
     request.Headers.Count = 3;
 
-    FieldLine* header = GetHeaderValue(&request, "Content-Type", 12);
+    FieldLine* header = GetHeaderValue(&request.Headers, "Content-Type", 12);
 
     if (header == NULL) {
         printf("Header not found\n");
@@ -70,7 +70,7 @@ int GetHeaderValue_InvalidSearch_ReturnsHeader() {
 
     request.Headers.Count = 3;
 
-    FieldLine* header = GetHeaderValue(&request, "haha", 12);
+    FieldLine* header = GetHeaderValue(&request.Headers, "haha", 12);
 
     if (header != NULL) {
         printf("Header found\n");

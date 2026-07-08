@@ -88,9 +88,11 @@ int ParseSizeT(const char* str, size_t len, size_t* result) {
 }
 
 int ReadBody(TextBuffer* buffer, size_t preambleOffset, HTTPRequest* request, SOCKET clientSocket) {
-    FieldLine* bodyHeader = GetHeaderValue(request, "Content-Length", 14);
+    FieldLine* bodyHeader = GetHeaderValue(&request->Headers, "Content-Length", 14);
     if (bodyHeader == NULL) {
-        return -1;
+        request->Body.Content = buffer->Content + preambleOffset;
+        request->Body.Count = 0;
+        return 0;
     }
 
     size_t bodySize;
