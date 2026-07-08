@@ -302,22 +302,12 @@ int ParseFieldLine(FieldLine* fieldLine, char* buffer, size_t bufferCount) {
     return 0;
 }
 
-void AddHeader(RequestHeaders* list, FieldLine token) {
-    if (list->Count == list->Capacity) {
-        size_t newCap = (list->Capacity == 0) ? 4 : list->Capacity * 2;
-        list->FieldLines = realloc(list->FieldLines, newCap * sizeof(FieldLine));
-        list->Capacity = newCap;
-    }
-
-    list->FieldLines[list->Count++] = token;
-}
-
 /// @brief Parses all headers into a dynamic array (AALOCATES MEMORY)
 /// @param headers The array to parse into
 /// @param buffer the buffer ot read from
 /// @param bufferCount the size of the buffer
 /// @return offset to end of headers on success, -1 on failure
-int ParseHeaders(RequestHeaders* headers, char* buffer, size_t bufferCount) {
+int ParseHeaders(MessageHeaders* headers, char* buffer, size_t bufferCount) {
     int globalOffset = 0;
 
     for (size_t i = 0; i < MAX_HEADERS; i++) {
@@ -343,7 +333,7 @@ int ParseHeaders(RequestHeaders* headers, char* buffer, size_t bufferCount) {
 int ParseMessagePreamble(HTTPRequest* request, char* buffer, size_t bufferCount) {
     StringView requestLineString = {0};
     RequestLine requestLine = {0};
-    RequestHeaders headers = {0};
+    MessageHeaders headers = {0};
 
     int requestLineOffset = GetLine(&requestLineString, buffer, bufferCount);
     ASSERT_SUCCESS(requestLineOffset);

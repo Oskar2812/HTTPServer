@@ -63,7 +63,7 @@ void Log(HTTPServer* server, LogLevel level, const char* format, ...) {
 }
 
 int InitialiseServer(HTTPServer* server, uint16_t port) {
-      if(InitiateListeningPort(server, 8080) == -1) {
+      if(InitiateListeningPort(server, port) == -1) {
         Log(server, LOG_ERROR, "Failed to start listening");
         return -1;
     }
@@ -71,6 +71,17 @@ int InitialiseServer(HTTPServer* server, uint16_t port) {
     Log(server, LOG_INFO, "Server started listening on port %u", port);
 
     return 0;
+}
+
+int RouteRequest(Endpoint** result, HTTPServer* server, StringView target) {
+    for (size_t i = 0; i < server->Endpoints.Count; i++) {
+        if (strncmp(target.Content, server->Endpoints.Content[i].Path, target.Count) == 0) {
+            *result = &server->Endpoints.Content[i];
+            return 0;
+        }
+    }
+
+    return -1;
 }
 
 int HandleConnection(HTTPServer* server, SOCKET client) {
@@ -84,6 +95,7 @@ int HandleConnection(HTTPServer* server, SOCKET client) {
         .Count = preambleOffset,
     };
 
+    // TODO: Send back a bad request 
     HTTPRequest request = {0};
     int preambleSize = ParseMessagePreamble(&request, preamble.Content, preamble.Count);
     ASSERT_AND_LOG_SUCCESS(server, preambleSize, "Socket %d - Failed to parse message request line and headers", client);
@@ -91,9 +103,16 @@ int HandleConnection(HTTPServer* server, SOCKET client) {
     int bodySize = ReadBody(&buffer, preambleOffset, &request, client);
     ASSERT_AND_LOG_SUCCESS(server, bodySize, "Socket %d - Failed to read message body into buffer", client);
 
-    PRINT_SV(request.Body);
+    Log(server, LOG_INFO, "Socket %d - Message of %d bytes read", client, buffer.Count);
 
-    Log(server, LOG_INFO, "Message of size %d bytes read on socket %d", buffer.Count, client);
+    // TODO: Send back a not found in this case
+    Endpoint* endpoint = NULL;
+    ASSERT_AND_LOG_SUCCESS(server, RouteRequest(&endpoint, server, request.RequestLine.Target.Target), "Socket %d - Endpoint %.*s not found", 
+            client, request.RequestLine.Target.Target.Count, request.RequestLine.Target.Target.Content);
+            
+    HTTPResponse response = {0};
+
+    ASSERT_AND_LOG_SUCCESS(server, endpoint->Callback(server, &response, &request), "Socket %d - Endpoint callback failed", client);
 
     closesocket(client);
 
@@ -118,8 +137,19 @@ int StartServer(HTTPServer* server) {
 }
 
 int StopServer(HTTPServer* server) {
+    free(server->Endpoints.Content);
     closesocket(server->ServerSocket);
     WSACleanup();
+
+    return 0;
+}
+
+int AddEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], EndpointCallback callback) {
+    server->Endpoints.Count += 1;
+    server->Endpoints.Content = realloc(server->Endpoints.Content, sizeof(Endpoint) * server->Endpoints.Count);
+
+    memcpy(server->Endpoints.Content[server->Endpoints.Count - 1].Path, path, MAX_PATH_LENGTH);
+    server->Endpoints.Content[server->Endpoints.Count - 1].Callback = callback;
 
     return 0;
 }

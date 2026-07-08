@@ -58,11 +58,11 @@ typedef struct {
     FieldLine* FieldLines;
     size_t Count;
     size_t Capacity;
-} RequestHeaders;
+} MessageHeaders;
 
 typedef struct {
     RequestLine RequestLine;
-    RequestHeaders Headers;
+    MessageHeaders Headers;
     StringView Body;
 } HTTPRequest;
 
@@ -72,6 +72,51 @@ typedef struct {
 /// @param size of header name (do not include null terminator in count)
 /// @return A FieldLine containing the header. (Note this points at the actual underlying memory stroing the requets modifiying the strings within will modify the request)
 FieldLine* GetHeaderValue(HTTPRequest* request, char headerName[MAX_HTTP_HEADER_NAME_LENGTH], size_t nameCount);
+
+//######################################## HTTP Response #########################################################################################
+
+typedef enum {
+    OK,
+    NOT_FOUND,
+    BAD_REQUEST,
+    INTERNAL_SERVER_ERROR,
+} HTTPStatus;
+
+typedef struct {
+    HTTPVersion Version;
+    HTTPStatus Status;
+} StatusLine;
+
+typedef struct {
+    StatusLine Status;
+    MessageHeaders Headers;
+    StringView Body;
+} HTTPResponse;
+
+/// @brief Sets the HTTP version of the response
+/// @param response the response
+/// @param version the version
+/// @return 0 on success, -1 otherwise
+int SetVersion(HTTPResponse* response, HTTPVersion version);
+
+/// @brief Sets the status of the response
+/// @param response the response
+/// @param status the status 
+/// @return 0 on success, -1 on failure
+int SetStatus(HTTPResponse* response, HTTPStatus status);
+
+/// @brief Sets the body of the response
+/// @param response the response
+/// @param body pointer to the body
+/// @param bodySize size of the body
+/// @return 0 on success, -1 on failure
+int SetBody(HTTPResponse* response, char* body, size_t bodySize);
+
+/// @brief Adds a header to the response
+/// @param response the response
+/// @param header header to add
+/// @return 0 on success, -1 otherwise
+int AddHeader(MessageHeaders* list, FieldLine header);
 
 //######################################## HTTP Server #########################################################################################
 typedef enum {
@@ -86,11 +131,13 @@ typedef struct {
     LogLevel MinimumLogLevel;
 } LogDetail;
 
-//typedef int (*EndpointCallback)(HTTPRequest* request, void (*Log)(HTTPServer* server, LogLevel level, const char* format, ...));
+typedef struct HTTPServer HTTPServer;
+
+typedef int (*EndpointCallback)(HTTPServer* server, HTTPResponse* response, HTTPRequest* request);
 
 typedef struct {
     char Path[MAX_PATH_LENGTH];
-   // EndpointCallback Callback;
+    EndpointCallback Callback;
 } Endpoint;
 
 typedef struct {
@@ -98,17 +145,24 @@ typedef struct {
     Endpoint* Content;
 } EndpointList;
 
-typedef struct {
+struct HTTPServer {
     SOCKET ServerSocket;
     LogDetail Logging;
     EndpointList Endpoints;
-} HTTPServer;
+};
 
 /// @brief Sets the loggin policy for the specified server
 /// @param server the server to set logging for 
 /// @param stream the stream to write the logs inot i.e. stdout or a specifc file of your choice
 /// @param minimumLogLevel the minimum log level to include i.e. an argumetn of LOG_WARNING will include logs of warning and error
 void SetLogging(HTTPServer* server, FILE* stream, LogLevel minimumLogLevel);
+
+/// @brief Logs input
+/// @param server the server to log on
+/// @param level the level to log at
+/// @param format the message log
+/// @param extra formating arguments
+void Log(HTTPServer* server, LogLevel level, const char* format, ...);
 
 /// @brief Initilaises the server on a specified port
 /// @param server the server to init
@@ -125,5 +179,12 @@ int StartServer(HTTPServer* server);
 /// @param server the server to stop
 /// @return 0 on succes, -1 on failure
 int StopServer(HTTPServer* server);
+
+/// @brief Adds an endpoint to the server
+/// @param server server to add too
+/// @param path path to endpoint (oriign form)
+/// @param callback callback to call when endpoint gets hit
+/// @return 0 on success, -1 on failure
+int AddEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], EndpointCallback callback);
 
 #endif

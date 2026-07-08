@@ -36,7 +36,7 @@ run_main: main
 
 
 tests:
-	$(CC) $(CFLAGS) $(OPT) $(TEST_DIR)/TestRunner.c -o $(TEST_BIN)
+	$(CC) $(CFLAGS) $(OPT) $(TEST_DIR)/TestRunner.c -o $(TEST_BIN) $(LINK_FLAGS)
 
 run_tests: tests
 	./$(TEST_BIN)

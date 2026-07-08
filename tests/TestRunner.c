@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #include "HTTPRequestParsingTests.c"
+#include "HTTPMessageHelperTests.c"
 
 
 #define RUN_TEST(test, total, failed) \
@@ -40,6 +41,11 @@ int main() {
     RUN_TEST(ParseFieldLine_ValidFieldLine_TrailingWhitespace_ParseSuccesful(), totalTests, failedTests);
     RUN_TEST(ParseFieldLine_ValidFieldLine_NoColon_ParseUnsuccesful(), totalTests, failedTests);
     RUN_TEST(ParseMessagePreamble_ValidPreamble_ParseSuccesful(), totalTests, failedTests);
+
+    printf("------------------------------HELPER TESTS-------------------------------\n");
+    RUN_TEST(GetHeaderValue_ValidSearch_ReturnsHeader(), totalTests, failedTests);
+    RUN_TEST(GetHeaderValue_InvalidSearch_ReturnsHeader(), totalTests, failedTests);
+    RUN_TEST(AddHeader_ValidHeader_Success(), totalTests, failedTests);
 
     printf("------------------------------END OF TESTS--------------------------------\n");
     printf("Tests run: %zu,\nTests failed: %zu\n", totalTests, failedTests);
