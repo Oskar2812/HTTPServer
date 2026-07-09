@@ -78,12 +78,34 @@ int InitialiseServer(HTTPServer* server, uint16_t port) {
 
 int RouteRequest(Endpoint** result, HTTPServer* server, StringView target, HTTPMethod method) {
     for (size_t i = 0; i < server->Endpoints.Count; i++) {
-        if (target.Count != strlen(server->Endpoints.Content[i].Path)) {
+        Endpoint* endpoint = &server->Endpoints.Content[i];
+        size_t pathLength = strlen(endpoint->Path);
+
+        if (endpoint->Method != method) {
             continue;
         }
-        if (strncmp(target.Content, server->Endpoints.Content[i].Path, target.Count) == 0 && server->Endpoints.Content[i].Method == method) {
-            *result = &server->Endpoints.Content[i];
-            return 0;
+
+        switch (endpoint->Type) {
+            case ROUTE_PREFIX:
+                if (target.Count < pathLength) {
+                    break;
+                }
+                if (strncmp(target.Content, endpoint->Path, pathLength) == 0) {
+                    if (target.Count == pathLength || target.Content[pathLength] == '/') {
+                        *result = endpoint;
+                        return 0;    
+                    }
+                }
+            break;
+            default:
+                if (target.Count != pathLength) {
+                    break;
+                }
+                if (strncmp(target.Content, endpoint->Path, target.Count) == 0) {
+                    *result = endpoint;
+                    return 0;
+                }
+            break;
         }
     }
 
@@ -273,6 +295,10 @@ int StartServer(HTTPServer* server) {
 }
 
 int StopServer(HTTPServer* server) {
+    for (size_t i = 0; i < server->Endpoints.Count; i++) {
+        free(server->Endpoints.Content[i].Context);
+    }
+
     free(server->Endpoints.Content);
     closesocket(server->ServerSocket);
     WSACleanup();
@@ -288,6 +314,7 @@ int AddEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], HTTPMethod metho
     server->Endpoints.Content[server->Endpoints.Count - 1].Callback = callback;
     server->Endpoints.Content[server->Endpoints.Count - 1].Method = method;
     server->Endpoints.Content[server->Endpoints.Count - 1].Context = NULL;
+    server->Endpoints.Content[server->Endpoints.Count - 1].Type = ROUTE_EXACT;
 
     return 0;
 }
@@ -299,6 +326,29 @@ int AddFileEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], HTTPMethod m
     server->Endpoints.Content[server->Endpoints.Count - 1].Callback = FileCallback;
     server->Endpoints.Content[server->Endpoints.Count - 1].Method = method;
     server->Endpoints.Content[server->Endpoints.Count - 1].Context = filePath;
+    server->Endpoints.Content[server->Endpoints.Count - 1].Type = ROUTE_EXACT;
+
+    return 0;
+}
+
+int AddStaticDirectoyEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], char* directory) {
+    DirectoryPathMapping* mapping =
+    malloc(sizeof(DirectoryPathMapping));
+
+    if (mapping == NULL) {
+        return -1;
+    }
+
+    strcpy(mapping->Directory, directory);
+    strcpy(mapping->Path, path);
+
+    server->Endpoints.Count += 1;
+    server->Endpoints.Content = realloc(server->Endpoints.Content, sizeof(Endpoint) * server->Endpoints.Count);
+    memcpy(server->Endpoints.Content[server->Endpoints.Count - 1].Path, path, MAX_PATH_LENGTH);
+    server->Endpoints.Content[server->Endpoints.Count - 1].Callback = DirectoryCallback;
+    server->Endpoints.Content[server->Endpoints.Count - 1].Context = mapping;
+    server->Endpoints.Content[server->Endpoints.Count - 1].Method = GET;
+    server->Endpoints.Content[server->Endpoints.Count - 1].Type = ROUTE_PREFIX;
 
     return 0;
 }

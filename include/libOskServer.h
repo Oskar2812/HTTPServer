@@ -137,10 +137,16 @@ typedef struct HTTPServer HTTPServer;
 
 typedef int (*EndpointCallback)(HTTPServer* server, HTTPResponse* response, HTTPRequest* request, void* context);
 
+typedef enum {
+    ROUTE_EXACT,
+    ROUTE_PREFIX,
+} RouteType;
+
 typedef struct {
     HTTPMethod Method;
     char Path[MAX_PATH_LENGTH];
     EndpointCallback Callback;
+    RouteType Type;
     void* Context;
 } Endpoint;
 
@@ -194,8 +200,15 @@ int AddEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], HTTPMethod metho
 /// @brief Adds an endpoint that serves a specified file to the server
 /// @param server server to add too
 /// @param path path to endpoint (oriign form)
-/// @param callback callback to call when endpoint gets hit
+/// @param filePath path to your file
 /// @return 0 on success, -1 on failure
 int AddFileEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], HTTPMethod method, char* filePath);
+
+/// @brief Adds a direcotry of files that can be retrived by /{path}/{filepath}
+/// @param server the server to add to
+/// @param path request path
+/// @param direcotry the path to the directory
+/// @return 0 on success, -1 on failure
+int AddStaticDirectoyEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], char* directory);
 
 #endif
