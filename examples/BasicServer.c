@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include "../include/libOskServer.h"
 
-int Callback(HTTPServer* server, HTTPResponse* response , HTTPRequest* request) {
+int Callback(HTTPServer* server, HTTPResponse* response , HTTPRequest* request, void* context) {
+    (void)context;
     (void)request;
 
     Log(server, LOG_INFO, "Ok endpoint hit");
@@ -11,7 +12,8 @@ int Callback(HTTPServer* server, HTTPResponse* response , HTTPRequest* request) 
     return 0;
 }
 
-int HTMLCallback(HTTPServer* server, HTTPResponse* response , HTTPRequest* request) {
+int HTMLCallback(HTTPServer* server, HTTPResponse* response , HTTPRequest* request, void* context) {
+    (void)context;
     (void)request;
     (void)server;
 
@@ -45,7 +47,8 @@ int HTMLCallback(HTTPServer* server, HTTPResponse* response , HTTPRequest* reque
     return 0;
 }
 
-int PostCallback(HTTPServer* server, HTTPResponse* response , HTTPRequest* request) {
+int PostCallback(HTTPServer* server, HTTPResponse* response , HTTPRequest* request, void* context) {
+    (void)context;
     Log(server, LOG_INFO, "Endpoint hit!!!!!!");
 
     SetBody(response, request->Body.Content, request->Body.Count);

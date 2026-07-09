@@ -70,8 +70,10 @@ $(BUILD_DIR)/test_%.o: $(TEST_DIR)/%.c
 # Clean build artifacts
 clean:
 	-rmdir /s /q $(BUILD_DIR) 
+	-rmdir /s /q $(EXAMPLES_BUILD_DIR) 
 	del $(LIB)
 	del app.exe
+	del tests.exe
 
 # Rebuild everything
 re: clean all

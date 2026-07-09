@@ -4,6 +4,7 @@
 #include "../include/Internal_HTTPRequestParsing.h"
 #include "../include/Internal_HTTPResponseSerialisation.h"
 #include "../include/Internal_UtilityMacros.h"
+#include "../include/Internal_HTTPServerUtility.h"
 
 #include <time.h>
 
@@ -172,7 +173,7 @@ int HandleConnection(HTTPServer* server, SOCKET client) {
         return 0;
     }
            
-    ASSERT_AND_LOG_SUCCESS(server, endpoint->Callback(server, &response, &request), "Socket %d - Endpoint callback failed", client);
+    ASSERT_AND_LOG_SUCCESS(server, endpoint->Callback(server, &response, &request, endpoint->Context), "Socket %d - Endpoint callback failed", client);
     if (response.Body.Count > 0) {
         AddBodyHeader(&response);
     }
@@ -221,6 +222,18 @@ int AddEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], HTTPMethod metho
     memcpy(server->Endpoints.Content[server->Endpoints.Count - 1].Path, path, MAX_PATH_LENGTH);
     server->Endpoints.Content[server->Endpoints.Count - 1].Callback = callback;
     server->Endpoints.Content[server->Endpoints.Count - 1].Method = method;
+    server->Endpoints.Content[server->Endpoints.Count - 1].Context = NULL;
+
+    return 0;
+}
+
+int AddFileEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], HTTPMethod method, char* filePath) {
+    server->Endpoints.Count += 1;
+    server->Endpoints.Content = realloc(server->Endpoints.Content, sizeof(Endpoint) * server->Endpoints.Count);
+    memcpy(server->Endpoints.Content[server->Endpoints.Count - 1].Path, path, MAX_PATH_LENGTH);
+    server->Endpoints.Content[server->Endpoints.Count - 1].Callback = FileCallback;
+    server->Endpoints.Content[server->Endpoints.Count - 1].Method = method;
+    server->Endpoints.Content[server->Endpoints.Count - 1].Context = filePath;
 
     return 0;
 }

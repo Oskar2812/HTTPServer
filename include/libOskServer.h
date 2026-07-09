@@ -135,12 +135,13 @@ typedef struct {
 
 typedef struct HTTPServer HTTPServer;
 
-typedef int (*EndpointCallback)(HTTPServer* server, HTTPResponse* response, HTTPRequest* request);
+typedef int (*EndpointCallback)(HTTPServer* server, HTTPResponse* response, HTTPRequest* request, void* context);
 
 typedef struct {
     HTTPMethod Method;
     char Path[MAX_PATH_LENGTH];
     EndpointCallback Callback;
+    void* Context;
 } Endpoint;
 
 typedef struct {
@@ -189,5 +190,12 @@ int StopServer(HTTPServer* server);
 /// @param callback callback to call when endpoint gets hit
 /// @return 0 on success, -1 on failure
 int AddEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], HTTPMethod method, EndpointCallback callback);
+
+/// @brief Adds an endpoint that serves a specified file to the server
+/// @param server server to add too
+/// @param path path to endpoint (oriign form)
+/// @param callback callback to call when endpoint gets hit
+/// @return 0 on success, -1 on failure
+int AddFileEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], HTTPMethod method, char* filePath);
 
 #endif

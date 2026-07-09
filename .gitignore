@@ -60,3 +60,5 @@ example_debug
 build
 main.c
 app.exe
+bin
+*.html
