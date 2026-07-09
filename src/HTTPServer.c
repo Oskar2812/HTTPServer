@@ -103,6 +103,32 @@ int SendNotFound(HTTPResponse* response, SOCKET client) {
     return 0;
 }
 
+int SendBadRequest(HTTPResponse* response, SOCKET client) {
+    SetStatus(response, BAD_REQUEST);
+
+    TextBuffer buffer = {0};
+    ASSERT_SUCCESS(SerialiseResponse(&buffer, response));
+
+    ASSERT_SUCCESS(SendData(client, &buffer));
+
+    free(buffer.Content);
+
+    return 0;
+}
+
+int SendInternalServerError(HTTPResponse* response, SOCKET client) {
+    SetStatus(response, INTERNAL_SERVER_ERROR);
+
+    TextBuffer buffer = {0};
+    ASSERT_SUCCESS(SerialiseResponse(&buffer, response));
+
+    ASSERT_SUCCESS(SendData(client, &buffer));
+
+    free(buffer.Content);
+
+    return 0;
+}
+
 int AddBodyHeader(HTTPResponse* response) {
      StringView headerName = {
         .Content = "Content-Length",
@@ -136,27 +162,45 @@ int AddBodyHeader(HTTPResponse* response) {
 int HandleConnection(HTTPServer* server, SOCKET client) {
     TextBuffer buffer = {0};
 
+    HTTPResponse response = {0};
+    SetVersion(&response, V_ONE);
+
     int preambleOffset = ReadPreamble(&buffer, client);
-    ASSERT_AND_LOG_SUCCESS(server, preambleOffset, "Socket %d - Failed to read request line and headers into buffer", client);
+    if (preambleOffset == -1) {
+        Log(server, LOG_ERROR, "Socket %d - Failed to read request line and headers into buffer", client);
+        ASSERT_AND_LOG_SUCCESS(server, SendInternalServerError(&response, client), "Socket %d - Failed to send internal server error response");
+        closesocket(client);
+        free(buffer.Content);
+        return 0;
+    }
 
     StringView preamble = {
         .Content = buffer.Content,
         .Count = preambleOffset,
     };
 
-    // TODO: Send back a bad request 
     HTTPRequest request = {0};
     int preambleSize = ParseMessagePreamble(&request, preamble.Content, preamble.Count);
-    ASSERT_AND_LOG_SUCCESS(server, preambleSize, "Socket %d - Failed to parse message request line and headers", client);
+    if (preambleSize == -1) {
+        Log(server, LOG_ERROR, "Socket %d - Failed to parse message request line and headers", client);
+        ASSERT_AND_LOG_SUCCESS(server, SendBadRequest(&response, client), "Socket %d - Failed to send bad request response");
+        closesocket(client);
+
+        free(request.Headers.FieldLines);
+        free(buffer.Content);
+        return 0;
+    }
 
     int bodySize = ReadBody(&buffer, preambleOffset, &request, client);
-    ASSERT_AND_LOG_SUCCESS(server, bodySize, "Socket %d - Failed to read message body into buffer", client);
+    if (bodySize == -1) {
+        Log(server, LOG_ERROR, "Socket %d - Failed to read message body into buffer", client);
+        ASSERT_AND_LOG_SUCCESS(server, SendBadRequest(&response, client), "Socket %d - Failed to send bad request response");
+        closesocket(client);
+        free(buffer.Content);
+        return 0;
+    }
 
     Log(server, LOG_INFO, "Socket %d - Message of %d bytes read", client, buffer.Count);
-
-    // TODO: Send back a not found in this case
-    HTTPResponse response = {0};
-    SetVersion(&response, V_ONE);
 
     Endpoint* endpoint = NULL;
     if (RouteRequest(&endpoint, server, request.RequestLine.Target.Target, request.RequestLine.Method) == -1) {
@@ -173,13 +217,34 @@ int HandleConnection(HTTPServer* server, SOCKET client) {
         return 0;
     }
            
-    ASSERT_AND_LOG_SUCCESS(server, endpoint->Callback(server, &response, &request, endpoint->Context), "Socket %d - Endpoint callback failed", client);
+    if (endpoint->Callback(server, &response, &request, endpoint->Context) == -1) {
+        Log(server, LOG_ERROR, "Socket %d - Endpoint callback failed", client);
+        ASSERT_AND_LOG_SUCCESS(server, SendInternalServerError(&response, client), "Socket %d - Failed to send internal server error response");
+        closesocket(client);
+
+        free(buffer.Content);
+        free(request.Headers.FieldLines);
+        free(request.RequestLine.Target.QueryParameters);
+
+        return 0;
+    }
     if (response.Body.Count > 0) {
         AddBodyHeader(&response);
     }
 
     TextBuffer sendBuffer = {0};
-    ASSERT_AND_LOG_SUCCESS(server, SerialiseResponse(&sendBuffer, &response), "Socket %d - Failed to serialise response", client);
+    if (SerialiseResponse(&sendBuffer, &response) == -1) {
+        Log(server, LOG_ERROR, "Socket %d - Endpoint callback failed", client);
+        ASSERT_AND_LOG_SUCCESS(server, SendInternalServerError(&response, client), "Socket %d - Failed to send internal server error response");
+        closesocket(client);
+
+        free(sendBuffer.Content);
+        free(buffer.Content);
+        free(request.Headers.FieldLines);
+        free(request.RequestLine.Target.QueryParameters);
+
+        return 0;
+    }
 
     ASSERT_AND_LOG_SUCCESS(server, SendData(client, &sendBuffer), "Socket %d - Failed to send response to client", client);
 
