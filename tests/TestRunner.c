@@ -4,6 +4,7 @@
 #include "HTTPRequestParsingTests.c"
 #include "HTTPMessageHelperTests.c"
 #include "HTTPResponseSerialisationTests.c"
+#include "HTTPListenerTests.c"
 
 
 #define RUN_TEST(test, total, failed) \
@@ -56,7 +57,13 @@ int main() {
     RUN_TEST(SerialiseFieldLine_ValidFieldLine_SerialisedCorrectly(), totalTests, failedTests);
     RUN_TEST(SerialiseHeaders_ValidHeaders_SerialisedCorrectly(), totalTests, failedTests);
     RUN_TEST(SerialiseBody_ValidBody_SerialisedCorrectly(), totalTests, failedTests);
-    RUN_TEST(SerialiseResponse_ValidResponse_SerialisedCorrectly(), totalTests, failedTests);
+    RUN_TEST(SerialiseResponse_ValidResponse_SerialisedCorrectly(), totalTests, failedTests); 
+
+    printf("------------------------------LISTENER TESTS-------------------------------\n");
+    RUN_TEST(ParseSizeT_ValidDigits_ParseSuccesful(), totalTests, failedTests);
+    RUN_TEST(ParseSizeT_NonDigitCharacter_ParseUnsuccesful(), totalTests, failedTests);
+    RUN_TEST(AllocateBufferMemory_WithinLimit_AllocatesSuccesfully(), totalTests, failedTests);
+    RUN_TEST(AllocateBufferMemory_ExceedsMaxBufferSize_AllocationUnsuccesful(), totalTests, failedTests);
 
     printf("------------------------------END OF TESTS--------------------------------\n");
     printf("Tests run: %zu,\nTests failed: %zu\n", totalTests, failedTests);

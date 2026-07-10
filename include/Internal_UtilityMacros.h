@@ -12,9 +12,9 @@
     }} while (0)
 
 #define PRINT_SV(sv) \
-    printf("%s: %.*s\n", #sv, (int)(sv).Count, (sv).Content)    
-
-#endif
+    printf("%s: %.*s\n", #sv, (int)(sv).Count, (sv).Content)
 
 #define MIN(x, y) \
     (x) < (y) ? (x) : (y)
+
+#endif

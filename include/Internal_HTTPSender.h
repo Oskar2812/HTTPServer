@@ -1,3 +1,6 @@
+#ifndef INTERNAL_HTTP_SENDER_H
+#define INTERNAL_HTTP_SENDER_H
+
 #include "libOskServer.h"
 
 #include "Internal_HTTPListener.h"
@@ -7,3 +10,5 @@
 /// @param buffer buffer to send
 /// @return 0 on success, -1 otherwise
 int SendData(SOCKET client, TextBuffer* buffer);
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef HTTPLISTENER_C
+#define HTTPLISTENER_C
+
 #include "../include/libOskServer.h"
 #include "../include/Internal_UtilityMacros.h"
 #include "../include/Internal_HTTPListener.h"
@@ -125,3 +128,5 @@ int ReadBody(TextBuffer* buffer, size_t preambleOffset, HTTPRequest* request, SO
 
     return bodySize;
 }
+
+#endif

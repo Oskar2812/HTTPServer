@@ -158,7 +158,7 @@ int AddBodyHeader(HTTPResponse* response) {
     };
 
     char* buffer = malloc(sizeof(char) * 32);
-    int digits = snprintf(buffer, sizeof(buffer), "%zu", response->Body.Count);
+    int digits = snprintf(buffer, sizeof(char) * 32, "%zu", response->Body.Count);
 
     StringView headerValue = {
         .Content = buffer,

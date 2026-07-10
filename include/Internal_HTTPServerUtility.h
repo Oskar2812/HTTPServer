@@ -1,3 +1,6 @@
+#ifndef INTERNAL_HTTP_SERVER_UTILITY_H
+#define INTERNAL_HTTP_SERVER_UTILITY_H
+
 #include "../include/libOskServer.h"
 
 typedef struct {
@@ -7,4 +10,6 @@ typedef struct {
 
 int FileCallback(HTTPServer* server, HTTPResponse* response, HTTPRequest* request, void* context);
 int DirectoryCallback(HTTPServer* server, HTTPResponse* response, HTTPRequest* request, void* context);
+
+#endif
 

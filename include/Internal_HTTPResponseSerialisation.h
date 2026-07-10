@@ -1,3 +1,6 @@
+#ifndef INTERNAL_HTTP_RESPONSE_SERIALISATION_H
+#define INTERNAL_HTTP_RESPONSE_SERIALISATION_H
+
 #include "libOskServer.h"
 
 #include "Internal_HTTPListener.h"
@@ -7,3 +10,5 @@
 /// @param response the response to serialise
 /// @return the size of buffer on success, -1 on failure
 int SerialiseResponse(TextBuffer* result, HTTPResponse* response);
+
+#endif
