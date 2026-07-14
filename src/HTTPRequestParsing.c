@@ -266,7 +266,10 @@ int GetFieldValue(StringView* fieldValue, char* buffer, size_t bufferCount) {
     ASSERT_SUCCESS(GetLine(fieldValue, buffer, bufferCount));
 
     size_t newCount = fieldValue->Count;
-    for (size_t i = fieldValue->Count - 1; i >= 0; i--) {
+    if (newCount == 0) {
+        return 0;
+    }
+    for (size_t i = fieldValue->Count - 1; i == 0; i--) {
         if (fieldValue->Content[i] == ' ') {
             newCount--;
         }

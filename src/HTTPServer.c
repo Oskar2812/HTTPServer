@@ -247,11 +247,15 @@ int HandleConnection(HTTPServer* server, SOCKET client) {
         free(buffer.Content);
         free(request.Headers.FieldLines);
         free(request.RequestLine.Target.QueryParameters);
+        free(response.Headers.FieldLines);
 
         return 0;
     }
+
+    FieldLine* contentLengthHeader = NULL;
     if (response.Body.Count > 0) {
         AddBodyHeader(&response);
+        contentLengthHeader = GetHeaderValue(&response.Headers, "Content-Length", 14);
     }
 
     TextBuffer sendBuffer = {0};
@@ -264,6 +268,10 @@ int HandleConnection(HTTPServer* server, SOCKET client) {
         free(buffer.Content);
         free(request.Headers.FieldLines);
         free(request.RequestLine.Target.QueryParameters);
+        if (contentLengthHeader != NULL) {
+            free(contentLengthHeader->FieldValue.Content);
+        }
+        free(response.Headers.FieldLines);
 
         return 0;
     }
@@ -277,8 +285,12 @@ int HandleConnection(HTTPServer* server, SOCKET client) {
     free(request.Headers.FieldLines);
     free(request.RequestLine.Target.QueryParameters);
     free(response.Body.Content);
-    
-    return 1;
+    if (contentLengthHeader != NULL) {
+        free(contentLengthHeader->FieldValue.Content);
+    }
+    free(response.Headers.FieldLines);
+
+    return 0;
 }
 
 int StartServer(HTTPServer* server) {
@@ -306,7 +318,7 @@ int StopServer(HTTPServer* server) {
     return 0;
 }
 
-int AddEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], HTTPMethod method, EndpointCallback callback) {
+int AddEndpoint(HTTPServer* server, const char* path, HTTPMethod method, EndpointCallback callback) {
     server->Endpoints.Count += 1;
     server->Endpoints.Content = realloc(server->Endpoints.Content, sizeof(Endpoint) * server->Endpoints.Count);
 
@@ -319,7 +331,7 @@ int AddEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], HTTPMethod metho
     return 0;
 }
 
-int AddFileEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], HTTPMethod method, char* filePath) {
+int AddFileEndpoint(HTTPServer* server, const char* path, HTTPMethod method, char* filePath) {
     server->Endpoints.Count += 1;
     server->Endpoints.Content = realloc(server->Endpoints.Content, sizeof(Endpoint) * server->Endpoints.Count);
     memcpy(server->Endpoints.Content[server->Endpoints.Count - 1].Path, path, MAX_PATH_LENGTH);
@@ -331,7 +343,7 @@ int AddFileEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], HTTPMethod m
     return 0;
 }
 
-int AddStaticDirectoyEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], char* directory) {
+int AddStaticDirectoyEndpoint(HTTPServer* server, const char* path, char* directory) {
     DirectoryPathMapping* mapping =
     malloc(sizeof(DirectoryPathMapping));
 

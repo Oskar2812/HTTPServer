@@ -1,4 +1,4 @@
-CC = clang
+CC = gcc
 CFLAGS = -Wall -Wextra
 LINK_FLAGS = -lws2_32
 OPT = -O0

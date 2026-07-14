@@ -71,7 +71,7 @@ typedef struct {
 /// @param headerName name of the header
 /// @param size of header name (do not include null terminator in count)
 /// @return A FieldLine containing the header. (Note this points at the actual underlying memory stroing the requets modifiying the strings within will modify the request)
-FieldLine* GetHeaderValue(MessageHeaders* request, char headerName[MAX_HTTP_HEADER_NAME_LENGTH], size_t nameCount);
+FieldLine* GetHeaderValue(MessageHeaders* request, const char* headerName, size_t nameCount);
 
 //######################################## HTTP Response #########################################################################################
 
@@ -195,20 +195,20 @@ int StopServer(HTTPServer* server);
 /// @param path path to endpoint (oriign form)
 /// @param callback callback to call when endpoint gets hit
 /// @return 0 on success, -1 on failure
-int AddEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], HTTPMethod method, EndpointCallback callback);
+int AddEndpoint(HTTPServer* server, const char* path, HTTPMethod method, EndpointCallback callback);
 
 /// @brief Adds an endpoint that serves a specified file to the server
 /// @param server server to add too
 /// @param path path to endpoint (oriign form)
 /// @param filePath path to your file
 /// @return 0 on success, -1 on failure
-int AddFileEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], HTTPMethod method, char* filePath);
+int AddFileEndpoint(HTTPServer* server, const char* path, HTTPMethod method, char* filePath);
 
 /// @brief Adds a direcotry of files that can be retrived by /{path}/{filepath}
 /// @param server the server to add to
 /// @param path request path
 /// @param direcotry the path to the directory
 /// @return 0 on success, -1 on failure
-int AddStaticDirectoyEndpoint(HTTPServer* server, char path[MAX_PATH_LENGTH], char* directory);
+int AddStaticDirectoyEndpoint(HTTPServer* server, const char* path, char* directory);
 
 #endif
