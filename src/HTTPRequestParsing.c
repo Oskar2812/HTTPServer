@@ -269,7 +269,7 @@ int GetFieldValue(StringView* fieldValue, char* buffer, size_t bufferCount) {
     if (newCount == 0) {
         return 0;
     }
-    for (size_t i = fieldValue->Count - 1; i == 0; i--) {
+    for (int i = fieldValue->Count - 1; i >= 0; i--) {
         if (fieldValue->Content[i] == ' ') {
             newCount--;
         }
