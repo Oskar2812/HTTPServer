@@ -5,6 +5,7 @@
 #include "../include/Internal_HTTPResponseSerialisation.h"
 #include "../include/Internal_UtilityMacros.h"
 #include "../include/Internal_HTTPServerUtility.h"
+#include "../include/Internal_ServerMultithreading.h"
 
 #include <time.h>
 
@@ -60,13 +61,19 @@ void Log(HTTPServer* server, LogLevel level, const char* format, ...) {
         vsnprintf(message, sizeof(message), format, args);
         va_end(args);
 
+        EnterCriticalSection(&server->Lock);
+
         fprintf(server->Logging.Stream, "[%s]: %s: %.*s\n", timestamp, levelText, MAX_LOG_MESSAGE_LENGTH, message);
         fflush(server->Logging.Stream);
+
+        LeaveCriticalSection(&server->Lock);
     }
 }
 
 int InitialiseServer(HTTPServer* server, uint16_t port) {
-      if(InitiateListeningPort(server, port) == -1) {
+    InitializeCriticalSection(&server->Lock);
+
+    if(InitiateListeningPort(server, port) == -1) {
         Log(server, LOG_ERROR, "Failed to start listening");
         return -1;
     }
@@ -290,19 +297,33 @@ int HandleConnection(HTTPServer* server, SOCKET client) {
     }
     free(response.Headers.FieldLines);
 
+    Log(server, LOG_INFO, "Socket %d - Connection handled", client);
+
     return 0;
 }
 
 int StartServer(HTTPServer* server) {
+    ConnectionQueue queue = {0};
+    QueueInit(&queue);
+
+    HANDLE workerThreads[WORKER_COUNT];
+    WorkerContext ctx = {
+        .Queue = &queue,
+        .Server = server
+    };
+
+    (void)workerThreads;
+
+    for (int i = 0; i < WORKER_COUNT; i++) {
+        workerThreads[i] = CreateThread(NULL, 0, WorkerThreadFunc, &ctx, 0, NULL);
+    }
     
     while (1) {
         SOCKET clientSocket = accept(server->ServerSocket, NULL, NULL);
 
         Log(server, LOG_INFO, "Socket %d - Connection recieved", clientSocket);
 
-        HandleConnection(server, clientSocket);
-
-        Log(server, LOG_INFO, "Socket %d - Connection handeled", clientSocket);
+        QueuePush(&queue, clientSocket);
     }
 }
 

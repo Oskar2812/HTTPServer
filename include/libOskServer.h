@@ -159,6 +159,7 @@ struct HTTPServer {
     SOCKET ServerSocket;
     LogDetail Logging;
     EndpointList Endpoints;
+    CRITICAL_SECTION Lock;
 };
 
 /// @brief Sets the loggin policy for the specified server
