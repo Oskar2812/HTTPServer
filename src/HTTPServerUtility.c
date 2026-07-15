@@ -88,7 +88,7 @@ int FileCallback(HTTPServer* server, HTTPResponse* response, HTTPRequest* reques
                     .Count = 12
                 },
                 .FieldValue = (StringView) {
-                    .Content = "css/html",
+                    .Content = "text/css",
                     .Count = 8
                 }
             });
