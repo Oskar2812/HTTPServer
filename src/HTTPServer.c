@@ -6,6 +6,7 @@
 #include "../include/Internal_UtilityMacros.h"
 #include "../include/Internal_HTTPServerUtility.h"
 #include "../include/Internal_ServerMultithreading.h"
+#include "../include/Internal_ServerHTTPS.h"
 
 #include <time.h>
 
@@ -119,39 +120,39 @@ int RouteRequest(Endpoint** result, HTTPServer* server, StringView target, HTTPM
     return -1;
 }
 
-int SendNotFound(HTTPResponse* response, SOCKET client) {
+int SendNotFound(HTTPResponse* response, SOCKET client, PCtxtHandle securityHandle) {
     SetStatus(response, NOT_FOUND);
 
     TextBuffer buffer = {0};
     ASSERT_SUCCESS(SerialiseResponse(&buffer, response));
 
-    ASSERT_SUCCESS(SendData(client, &buffer));
+    ASSERT_SUCCESS(SendData(client, &buffer, securityHandle));
 
     free(buffer.Content);
 
     return 0;
 }
 
-int SendBadRequest(HTTPResponse* response, SOCKET client) {
+int SendBadRequest(HTTPResponse* response, SOCKET client, PCtxtHandle securityHandle) {
     SetStatus(response, BAD_REQUEST);
 
     TextBuffer buffer = {0};
     ASSERT_SUCCESS(SerialiseResponse(&buffer, response));
 
-    ASSERT_SUCCESS(SendData(client, &buffer));
+    ASSERT_SUCCESS(SendData(client, &buffer, securityHandle));
 
     free(buffer.Content);
 
     return 0;
 }
 
-int SendInternalServerError(HTTPResponse* response, SOCKET client) {
+int SendInternalServerError(HTTPResponse* response, SOCKET client, PCtxtHandle securityHandle) {
     SetStatus(response, INTERNAL_SERVER_ERROR);
 
     TextBuffer buffer = {0};
     ASSERT_SUCCESS(SerialiseResponse(&buffer, response));
 
-    ASSERT_SUCCESS(SendData(client, &buffer));
+    ASSERT_SUCCESS(SendData(client, &buffer, securityHandle));
 
     free(buffer.Content);
 
@@ -190,14 +191,28 @@ int AddBodyHeader(HTTPResponse* response) {
 
 int HandleConnection(HTTPServer* server, SOCKET client) {
     TextBuffer buffer = {0};
+    CtxtHandle securityContext = {0};
+
+    DWORD timeout = 5000;  // milliseconds — 30 seconds here
+    int result = setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
+    if (result == SOCKET_ERROR) {
+        printf("setsockopt failed: %d\n", WSAGetLastError());
+    }
+
+    if (server->Secure && DoTLSHandshake(&securityContext, &buffer, client, server->HTTPSCredentials) == -1) {
+        Log(server, LOG_ERROR, "Socket %d - Failed to establish TLS handshake", client);
+        closesocket(client);
+        free(buffer.Content);
+        return -1;
+    }
 
     HTTPResponse response = {0};
     SetVersion(&response, V_ONE);
 
-    int preambleOffset = ReadPreamble(&buffer, client);
+    int preambleOffset = ReadPreamble(&buffer, client, server->Secure ? &securityContext : NULL);
     if (preambleOffset == -1) {
         Log(server, LOG_ERROR, "Socket %d - Failed to read request line and headers into buffer", client);
-        ASSERT_AND_LOG_SUCCESS(server, SendInternalServerError(&response, client), "Socket %d - Failed to send internal server error response");
+        ASSERT_AND_LOG_SUCCESS(server, SendInternalServerError(&response, client, server->Secure ? &securityContext : NULL), "Socket %d - Failed to send internal server error response");
         closesocket(client);
         free(buffer.Content);
         return 0;
@@ -212,7 +227,7 @@ int HandleConnection(HTTPServer* server, SOCKET client) {
     int preambleSize = ParseMessagePreamble(&request, preamble.Content, preamble.Count);
     if (preambleSize == -1) {
         Log(server, LOG_ERROR, "Socket %d - Failed to parse message request line and headers", client);
-        ASSERT_AND_LOG_SUCCESS(server, SendBadRequest(&response, client), "Socket %d - Failed to send bad request response");
+        ASSERT_AND_LOG_SUCCESS(server, SendBadRequest(&response, client, server->Secure ? &securityContext : NULL), "Socket %d - Failed to send bad request response");
         closesocket(client);
 
         free(request.Headers.FieldLines);
@@ -220,10 +235,10 @@ int HandleConnection(HTTPServer* server, SOCKET client) {
         return 0;
     }
 
-    int bodySize = ReadBody(&buffer, preambleOffset, &request, client);
+    int bodySize = ReadBody(&buffer, preambleOffset, &request, client, server->Secure ? &securityContext : NULL);
     if (bodySize == -1) {
         Log(server, LOG_ERROR, "Socket %d - Failed to read message body into buffer", client);
-        ASSERT_AND_LOG_SUCCESS(server, SendBadRequest(&response, client), "Socket %d - Failed to send bad request response");
+        ASSERT_AND_LOG_SUCCESS(server, SendBadRequest(&response, client, server->Secure ? &securityContext : NULL), "Socket %d - Failed to send bad request response");
         closesocket(client);
         free(buffer.Content);
         return 0;
@@ -235,7 +250,7 @@ int HandleConnection(HTTPServer* server, SOCKET client) {
     if (RouteRequest(&endpoint, server, request.RequestLine.Target.Target, request.RequestLine.Method) == -1) {
         Log(server, LOG_WARNING, "Socket %d - Endpoint %.*s not found", 
             client, request.RequestLine.Target.Target.Count, request.RequestLine.Target.Target.Content);
-        ASSERT_AND_LOG_SUCCESS(server, SendNotFound(&response, client), "Socket %d - Failed to send not found response");
+        ASSERT_AND_LOG_SUCCESS(server, SendNotFound(&response, client, server->Secure ? &securityContext : NULL), "Socket %d - Failed to send not found response");
 
         closesocket(client);
 
@@ -248,7 +263,7 @@ int HandleConnection(HTTPServer* server, SOCKET client) {
            
     if (endpoint->Callback(server, &response, &request, endpoint->Context) == -1) {
         Log(server, LOG_ERROR, "Socket %d - Endpoint callback failed", client);
-        ASSERT_AND_LOG_SUCCESS(server, SendInternalServerError(&response, client), "Socket %d - Failed to send internal server error response");
+        ASSERT_AND_LOG_SUCCESS(server, SendInternalServerError(&response, client, server->Secure ? &securityContext : NULL), "Socket %d - Failed to send internal server error response");
         closesocket(client);
 
         free(buffer.Content);
@@ -268,7 +283,7 @@ int HandleConnection(HTTPServer* server, SOCKET client) {
     TextBuffer sendBuffer = {0};
     if (SerialiseResponse(&sendBuffer, &response) == -1) {
         Log(server, LOG_ERROR, "Socket %d - Endpoint callback failed", client);
-        ASSERT_AND_LOG_SUCCESS(server, SendInternalServerError(&response, client), "Socket %d - Failed to send internal server error response");
+        ASSERT_AND_LOG_SUCCESS(server, SendInternalServerError(&response, client, server->Secure ? &securityContext : NULL), "Socket %d - Failed to send internal server error response");
         closesocket(client);
 
         free(sendBuffer.Content);
@@ -283,7 +298,7 @@ int HandleConnection(HTTPServer* server, SOCKET client) {
         return 0;
     }
 
-    ASSERT_AND_LOG_SUCCESS(server, SendData(client, &sendBuffer), "Socket %d - Failed to send response to client", client);
+    ASSERT_AND_LOG_SUCCESS(server, SendData(client, &sendBuffer, server->Secure ? &securityContext : NULL), "Socket %d - Failed to send response to client", client);
 
     closesocket(client);
 

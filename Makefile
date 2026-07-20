@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Wextra
-LINK_FLAGS = -lws2_32
+LINK_FLAGS = -lws2_32 -lsecur32 -lcrypt32
 OPT = -O0
 
 BIN_DIR = bin

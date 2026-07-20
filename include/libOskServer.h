@@ -1,9 +1,12 @@
 #ifndef LIB_OSK_SERVER_H
 #define LIB_OSK_SERVER_H
 
+#define SECURITY_WIN32 // Needed for sspi for some reason 
+
 #include <stdint.h>
 #include <winsock2.h>
 #include <stdio.h>
+#include <sspi.h>
 //######################################## HTTP Parsing #######################################################################################
 
 #define MAX_HEADERS 50
@@ -160,7 +163,16 @@ struct HTTPServer {
     LogDetail Logging;
     EndpointList Endpoints;
     CRITICAL_SECTION Lock;
+    int Secure;
+    CredHandle HTTPSCredentials;
 };
+
+/// @brief Enables the server to use HTTPS with a speicifed certificate for auhtentication
+/// @param server the server to modify 
+/// @param certificateThumbprint the thumbprint of the certificate to use
+/// @param certificateStore the store the certificate is kept in i.e. "MY"
+/// @return 0 on success, -1 on failure
+int EnableHTTPS(HTTPServer* server, const char* certificateThumbprint, const char* certificateStore);
 
 /// @brief Sets the loggin policy for the specified server
 /// @param server the server to set logging for 

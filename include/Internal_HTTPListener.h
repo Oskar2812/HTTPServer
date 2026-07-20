@@ -3,12 +3,14 @@
 
 #include "libOskServer.h"
 
-#define MAX_BUFFER_SIZE 32768 + 1048576
+#define KB 1024
+#define MAX_BUFFER_SIZE 1024 * KB
 
 typedef struct 
 {
     char* Content;
     size_t Count;
+    size_t DecryptedCount;
     size_t Capacity;
 } TextBuffer;
 
@@ -17,6 +19,12 @@ typedef struct
 /// @param bytes how much memory to alocate
 /// @return 0 on success, -1 on failure
 int AllocateBufferMemory(TextBuffer* buffer, uint16_t bytes);
+
+/// @brief Read bytes from socket
+/// @param buffer buffer to read into
+/// @param clientSocket socket to read from
+/// @return -1 on failure, number of byres recieved on success
+int ReadBytes(TextBuffer* buffer, SOCKET clientSocket);
 
 /// @brief Starts the server listening ona specific port 
 /// @param server the server tointialise
@@ -27,8 +35,9 @@ int InitiateListeningPort(HTTPServer* server, uint16_t port);
 /// @brief Reads the preamble from the buffer
 /// @param buffer the buffer to read from
 /// @param clientSocket the socket assigned to the client
+/// @param securityContext the context used to decrpyt messages - if https is not being used pass NULL
 /// @return size of preamble on succes, -1 otherwise 
-int ReadPreamble(TextBuffer* buffer, SOCKET clientSocket);
+int ReadPreamble(TextBuffer* buffer, SOCKET clientSocket, PCtxtHandle securityContext);
 
 /// @brief Reads the body into the buffer and points the string view in the requets struct at it. 
 /// Note: I don't know if it's better to simply have this method read the body into the TextBuffer and the have a seperate method to add it into the request struct
@@ -38,7 +47,8 @@ int ReadPreamble(TextBuffer* buffer, SOCKET clientSocket);
 /// @param buffer The buffer to read into 
 /// @param request the underlying request
 /// @param clientSocket the socket assigned to the client 
+/// @param securityContext the context used to decrpyt messages - if https is not being used pass NULL
 /// @return size of body on success, -1 otherwise 
-int ReadBody(TextBuffer* buffer, size_t preambleOffset, HTTPRequest* request, SOCKET clientSocket);
+int ReadBody(TextBuffer* buffer, size_t preambleOffset, HTTPRequest* request, SOCKET clientSocket, PCtxtHandle securityContext);
 
 #endif
