@@ -11,21 +11,24 @@ This is a learning project aimed at understanding what actually happens under th
 ## Features
 
 - Raw TCP socket handling via Winsock2
+- HTTPS support via SChannel/SSPI (`EnableHTTPS`), using a certificate already installed in a Windows certificate store
+- Multithreaded connection handling — a fixed worker pool pulls accepted sockets off a bounded, condition-variable-guarded queue
 - HTTP request line, header, and body parsing
 - HTTP response construction and serialisation
 - Simple routing:
   - Exact-path endpoints (`AddEndpoint`)
   - Single-file endpoints (`AddFileEndpoint`)
   - Static directory serving (`AddStaticDirectoyEndpoint`)
-- Configurable logging (`LOG_DEBUG` → `LOG_ERROR`) to any `FILE*` stream
+- Configurable logging (`LOG_DEBUG` → `LOG_ERROR`) to any `FILE*` stream, guarded by a critical section so worker threads can log concurrently
 - Ships as a static library (`libOskServer.a`) you link into your own app
 
 ## Requirements
 
 - Windows
-- [Clang](https://clang.llvm.org/) (the Makefile invokes `clang` directly)
+- [GCC](https://gcc.gnu.org/) (the Makefile invokes `gcc` directly)
 - GNU Make
-- Winsock2 (`ws2_32`, part of Windows — linked automatically by the Makefile)
+- Winsock2, Secur32, and Crypt32 (`ws2_32`, `secur32`, `crypt32` — all part of Windows, linked automatically by the Makefile)
+- A certificate in a Windows certificate store (e.g. `certlm.msc`) if you want to use HTTPS
 
 ## Building
 
@@ -36,7 +39,7 @@ make lib
 # Build and run the test suite
 make run_tests
 
-# Build the example programs (BasicServer, StaticSite)
+# Build the example programs (BasicServer, BasicHTTPSServer, StaticSite, StaticHTTPSSite, SleepEndpoint)
 make examples
 
 # Clean build artifacts
@@ -127,16 +130,40 @@ int main() {
 }
 ```
 
-More complete, runnable examples live in [`examples/`](examples/): [`BasicServer.c`](examples/BasicServer.c) and [`StaticSite.c`](examples/StaticSite.c).
+### Enabling HTTPS
+
+```c
+int main() {
+    HTTPServer server = {0};
+
+    // Certificate must already be installed in the given Windows cert store,
+    // identified here by its SHA-1 thumbprint.
+    EnableHTTPS(&server, CERTIFICATE_THUMBPRINT, "MY");
+
+    SetLogging(&server, stdout, LOG_DEBUG);
+    InitialiseServer(&server, 8080);
+
+    AddEndpoint(&server, "/ok", GET, OkCallback);
+
+    StartServer(&server);
+    StopServer(&server);
+}
+```
+
+`EnableHTTPS` must be called before `InitialiseServer`. Once enabled, the server performs a TLS handshake (via SChannel/SSPI) on every accepted connection before parsing the request.
+
+More complete, runnable examples live in [`examples/`](examples/): [`BasicServer.c`](examples/BasicServer.c), [`BasicHTTPSServer.c`](examples/BasicHTTPSServer.c), [`StaticSite.c`](examples/StaticSite.c), [`StaticHTTPSSite.c`](examples/StaticHTTPSSite.c), and [`SleepEndpoint.c`](examples/SleepEndpoint.c).
 
 ## API overview
 
 | Function | Purpose |
 |---|---|
 | `InitialiseServer(server, port)` | Set up the listening socket on a given port |
-| `StartServer(server)` | Start the accept/handle loop (blocking) |
+| `EnableHTTPS(server, certificateThumbprint, certificateStore)` | Turn on TLS using a certificate from a Windows certificate store (call before `InitialiseServer`) |
+| `StartServer(server)` | Start accepting connections and dispatch them to a worker thread pool (blocking) |
 | `StopServer(server)` | Clean up sockets and WSA resources |
 | `SetLogging(server, stream, minimumLogLevel)` | Configure where and how much gets logged |
+| `Log(server, level, format, ...)` | Write a log message at the given level |
 | `AddEndpoint(server, path, method, callback)` | Register a callback for an exact path + method |
 | `AddFileEndpoint(server, path, method, filePath)` | Serve a single file from a path |
 | `AddStaticDirectoyEndpoint(server, path, directory)` | Serve an entire directory as static files |
@@ -169,9 +196,11 @@ This builds and runs `tests/TestRunner.c`, which covers HTTP request parsing, re
 
 This is an early-stage personal/learning project. Notable current limitations:
 
-- Windows-only (Winsock2 + Windows batch commands in the Makefile)
+- Windows-only (Winsock2/SChannel + Windows batch commands in the Makefile)
 - Only `GET`, `POST`, `PUT`, and `DELETE` methods are defined so far (see the `TODO` in `libOskServer.h`)
-- `StartServer` currently runs an unbreakable loop — there's no built-in way to gracefully stop the accept loop short of a crash or killing the process
+- `StartServer` currently runs an unbreakable accept loop — there's no built-in way to gracefully stop it short of a crash or killing the process
+- The worker pool size (`WORKER_COUNT`) and connection queue capacity (`QUEUE_CAPACITY`) are fixed at compile time in `Internal_ServerMultithreading.h`, not configurable per-server
+- HTTPS relies on a certificate already being present in a Windows certificate store — there's no support for loading a cert from a file (e.g. PEM/PFX)
 
 Contributions, issues, and suggestions are welcome.
 
