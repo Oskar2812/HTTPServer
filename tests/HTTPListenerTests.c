@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+#include "../src/ServerHTTPS.c"
 #include "../src/HTTPListener.c"
 
 int ParseSizeT_ValidDigits_ParseSuccesful() {

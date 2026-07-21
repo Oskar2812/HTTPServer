@@ -1,3 +1,6 @@
+#ifndef SERVERHTTPS_C
+#define SERVERHTTPS_C
+
 #include "../include/libOskServer.h"
 #include "../include/Internal_ServerHTTPS.h"
 #include "../include/Internal_HTTPListener.h"
@@ -200,6 +203,8 @@ int DecryptBytes(TextBuffer* buffer, PCtxtHandle securityContext) {
 
             return 1;
         default:
-            return -1; 
+            return -1;
     }
 }
+
+#endif
